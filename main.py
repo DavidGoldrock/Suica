@@ -15,17 +15,24 @@ from Ball import Ball
 import numpy as np
 
 configPath = os.path.dirname(os.path.realpath(__file__))
-defaultWidth = 640
+defaultWidth = 640 * 16 / 9
 defaultHeight = 640
+xPadding = max(defaultWidth - defaultHeight, 0) / 2
+yPadding = max(defaultHeight - defaultWidth, 0) / 2
 window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
 clock = pygame.time.Clock()
 running = True
 
-balls = [Ball(0.7, 0.2, 0.00, 0.01, FruitType.peach)]
+balls = []
 
 
 def getScreenSize():
-    return pygame.display.get_surface().get_size()
+    global xPadding
+    global yPadding
+    defaultWidth , defaultHeight = pygame.display.get_surface().get_size()
+    xPadding = max(defaultWidth - defaultHeight, 0) / 2
+    yPadding = max(defaultHeight - defaultWidth, 0) / 2
+    return min(defaultWidth , defaultHeight)
 
 
 def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, center: bool = True,
@@ -40,7 +47,7 @@ def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, cent
     screenText = font.render(text, False, color)
 
     if absoluteSize:
-        x, y = x * getScreenSize()[0], y * getScreenSize()[1]
+        x, y = x * getScreenSize(), y * getScreenSize()
 
     if center:
         x -= screenText.get_size()[0] // 2
@@ -79,24 +86,7 @@ def colisionSameType(i, j):
     balls.append(newBall)
 
 
-
 def colisionDifferentType(i, j):
-
-
-    c1 = np.array([balls[i].x, balls[i].y])
-    c2 = np.array([balls[j].x, balls[j].y])
-    v1 = np.array([balls[i].velX, balls[i].velY])
-    v2 = np.array([balls[j].velX, balls[j].velY])
-    m1 = balls[i].radius
-    m2 = balls[j].radius
-
-    v1N = v1 - ((2 * m2) / (m1 + m2)) * (np.dot(v1 - v2, c1-c2)) / (math.dist((0,0), (c1-c2))) * (c1-c2)
-    v2N = v2 - ((2 * m1) / (m2 + m1)) * (np.dot(v2 - v1, c2-c1)) / (math.dist((0,0), (c2-c1))) * (c2-c1)
-    balls[i].velX = v1N[0]
-    balls[i].velY = v1N[1]
-    balls[j].velX = v2N[0]
-    balls[j].velY = v2N[1]
-
     dx = balls[i].x - balls[j].x
     dy = balls[i].y - balls[j].y
     distance = balls[i].distance(balls[j])
@@ -109,6 +99,19 @@ def colisionDifferentType(i, j):
     balls[j].x -= dx * overlap / 2
     balls[j].y -= dy * overlap / 2
 
+    c1 = np.array([balls[i].x, balls[i].y])
+    c2 = np.array([balls[j].x, balls[j].y])
+    v1 = np.array([balls[i].velX, balls[i].velY])
+    v2 = np.array([balls[j].velX, balls[j].velY])
+    m1 = balls[i].radius
+    m2 = balls[j].radius
+
+    v1N = v1 - ((2 * m2) / (m1 + m2)) * (np.dot(v1 - v2, c1 - c2)) / (math.dist((0, 0), (c1 - c2))) * (c1 - c2)
+    v2N = v2 - ((2 * m1) / (m2 + m1)) * (np.dot(v2 - v1, c2 - c1)) / (math.dist((0, 0), (c2 - c1))) * (c2 - c1)
+    balls[i].velX = v1N[0]
+    balls[i].velY = v1N[1]
+    balls[j].velX = v2N[0]
+    balls[j].velY = v2N[1]
 
     # normal = np.array([balls[i].x - xRR, balls[i].y - yRR])
     # normal = normal / (math.dist((0,0), normal))
@@ -164,7 +167,7 @@ def handleColision():
 
     balls = [ball for ball in balls if not ball.hasColided]
 
-
+screenSize = getScreenSize()
 first = True
 start = time.time()
 while running:
@@ -172,16 +175,18 @@ while running:
         if event.type == pygame.QUIT:
             exitGame()
         if event.type == pygame.MOUSEBUTTONDOWN:
-            balls.append(Ball(pygame.mouse.get_pos()[0] / screenSize[0], 0.2, 0.00, 0.01, FruitType.peach))
+            balls.append(Ball((pygame.mouse.get_pos()[0] - xPadding) / screenSize, 0.2, 0.00, 0.01, FruitType.peach))
     keys = pygame.key.get_pressed()
     timeDelta = clock.tick(FPS) / 1000
     screenSize = getScreenSize()
     handleColision()
 
     window.fill((0, 0, 0))
+    line(window, 'white', (xPadding + (0.5 + screenPercents[0] / 2) * screenSize,yPadding + (0.5 - screenPercents[1] / 2) * screenSize), (xPadding + (0.5 + screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), 5)
+    line(window, 'white', (xPadding + (0.5 - screenPercents[0] / 2) * screenSize,yPadding + (0.5 - screenPercents[1] / 2) * screenSize), (xPadding + (0.5 - screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), 5)
+    line(window, 'white', (xPadding + (0.5 - screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), (xPadding + (0.5 + screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), 5)
     for ball in balls:
         ball.update(timeDelta)
-        ball.draw(window, screenSize)
-
+        ball.draw(window, screenSize,xPadding,yPadding)
 
     pygame.display.flip()
