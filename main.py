@@ -1,14 +1,18 @@
+import math
 import os
 import time
 
 import pygame
 from pygame.locals import *
+from pygame.draw import *
 
 from copy import deepcopy
 
 from Defenitions import *
 import FruitType
 from Ball import Ball
+
+import numpy as np
 
 configPath = os.path.dirname(os.path.realpath(__file__))
 defaultWidth = 640
@@ -66,14 +70,33 @@ def exitGame():
     pygame.quit()
     exit()
 
-def colisionSameType(i,j):
+
+def colisionSameType(i, j):
     newBall = Ball((balls[i].x + balls[j].x) / 2, (balls[i].y + balls[j].y) / 2, 0, 0,
                    balls[i].fruitType.nextFruitType)
     balls[i].hasColided = True
     balls[j].hasColided = True
     balls.append(newBall)
 
-def colisionDifferentType(i,j):
+
+
+def colisionDifferentType(i, j):
+
+
+    c1 = np.array([balls[i].x, balls[i].y])
+    c2 = np.array([balls[j].x, balls[j].y])
+    v1 = np.array([balls[i].velX, balls[i].velY])
+    v2 = np.array([balls[j].velX, balls[j].velY])
+    m1 = balls[i].radius
+    m2 = balls[j].radius
+
+    v1N = v1 - ((2 * m2) / (m1 + m2)) * (np.dot(v1 - v2, c1-c2)) / (math.dist((0,0), (c1-c2))) * (c1-c2)
+    v2N = v2 - ((2 * m1) / (m2 + m1)) * (np.dot(v2 - v1, c2-c1)) / (math.dist((0,0), (c2-c1))) * (c2-c1)
+    balls[i].velX = v1N[0]
+    balls[i].velY = v1N[1]
+    balls[j].velX = v2N[0]
+    balls[j].velY = v2N[1]
+
     dx = balls[i].x - balls[j].x
     dy = balls[i].y - balls[j].y
     distance = balls[i].distance(balls[j])
@@ -86,13 +109,46 @@ def colisionDifferentType(i,j):
     balls[j].x -= dx * overlap / 2
     balls[j].y -= dy * overlap / 2
 
-    balls[i].velX += dx * overlap / 2
-    balls[i].velY += dy * overlap / 2
-    balls[j].velX -= dx * overlap / 2
-    balls[j].velY -= dy * overlap / 2
+
+    # normal = np.array([balls[i].x - xRR, balls[i].y - yRR])
+    # normal = normal / (math.dist((0,0), normal))
+    # tangent = np.array([-normal[1], normal[0]])
+    #
+    #
+    # vel1N = normal * v2
+    # vel1T = tangent * v1
+    # vel2N = normal * v2
+    # vel2T = tangent * v2
+    #
+    #
+    #
+    # vel1NScalar = ((math.dist((0,0), vel1N)) * (m1-m2) + 2 * m1 * (math.dist((0,0), vel2N))) / (m1 + m2)
+    # vel2NScalar = ((math.dist((0,0), vel2N)) * (m2-m1) + 2 * m2 * (math.dist((0,0), vel1N))) / (m2 + m1)
+    #
+    # vel1NNew = vel1NScalar * normal
+    # vel2NNew = vel2NScalar * normal
+    #
+    # vel1New = vel1NNew + vel1T
+    # vel2New = vel2NNew + vel2T
+    #
+    # print(v1,vel1New)
+    #
+    # balls[i].velX = vel1New[0]
+    # balls[i].velY = vel1New[1]
+    # balls[j].velX = vel2New[0]
+    # balls[j].velY = vel2New[1]
+    #
+    # balls[i].x += dx * overlap / 1.9
+    # balls[i].y += dy * overlap / 1.9
+    # balls[j].x -= dx * overlap / 1.9
+    # balls[j].y -= dy * overlap / 1.9
+
+    pygame.display.flip()
+
     # update speed of both balls when they collide
     # balls[i].velY = 0
     # balls[j].velY = 0
+
 
 def handleColision():
     global balls
@@ -102,9 +158,9 @@ def handleColision():
                 if not balls[j].hasColided:
                     if balls[i].collision(balls[j]) and balls[i].fruitType.nextFruitType is not None and balls[
                         i].fruitType == balls[j].fruitType:
-                        colisionSameType(i,j)
+                        colisionSameType(i, j)
                     elif balls[i].collision(balls[j]):
-                        colisionDifferentType(i,j)
+                        colisionDifferentType(i, j)
 
     balls = [ball for ball in balls if not ball.hasColided]
 
@@ -119,12 +175,13 @@ while running:
             balls.append(Ball(pygame.mouse.get_pos()[0] / screenSize[0], 0.2, 0.00, 0.01, FruitType.peach))
     keys = pygame.key.get_pressed()
     timeDelta = clock.tick(FPS) / 1000
-    window.fill((0, 0, 0))
     screenSize = getScreenSize()
     handleColision()
 
+    window.fill((0, 0, 0))
     for ball in balls:
         ball.update(timeDelta)
         ball.draw(window, screenSize)
+
 
     pygame.display.flip()
