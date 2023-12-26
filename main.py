@@ -1,18 +1,16 @@
-import math
 import os
 import time
 
 import pygame
-from pygame.locals import *
+import pymunk
 from pygame.draw import *
+from pygame.locals import *
 
-from copy import deepcopy
+import random
 
-from Defenitions import *
 import FruitType
 from Ball import Ball
-
-import numpy as np
+from Defenitions import *
 
 configPath = os.path.dirname(os.path.realpath(__file__))
 defaultWidth = 640 * 16 / 9
@@ -23,16 +21,16 @@ window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
 clock = pygame.time.Clock()
 running = True
 
-balls = []
+biggestIndex = 0
 
 
 def getScreenSize():
     global xPadding
     global yPadding
-    defaultWidth , defaultHeight = pygame.display.get_surface().get_size()
+    defaultWidth, defaultHeight = pygame.display.get_surface().get_size()
     xPadding = max(defaultWidth - defaultHeight, 0) / 2
     yPadding = max(defaultHeight - defaultWidth, 0) / 2
-    return min(defaultWidth , defaultHeight)
+    return min(defaultWidth, defaultHeight)
 
 
 def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, center: bool = True,
@@ -73,120 +71,120 @@ def longTextBlock(texts: list[str], x: float, y: float, size: int, color: tuple 
                   font)
 
 
+def handleCollision(arbiter, space, data):
+    global ammountGenerated
+    colided = []
+    for shape in arbiter.shapes:
+        for ball in balls:
+            if ball.shape == shape:
+                colided.append(ball)
+    balls.remove(colided[0])
+    balls.remove(colided[1])
+    space.remove(colided[0].shape)
+    space.remove(colided[1].shape)
+
+    newX, newY = (colided[0].body.position.x + colided[1].body.position.x) / 2, (
+                colided[0].body.position.y + colided[1].body.position.y) / 2
+    colidedBall = Ball(newX, newY, ammountGenerated, FruitType.fruitTypes[data + 1])
+    colidedBall.addObject(space)
+    balls.append(colidedBall)
+    ammountGenerated += 1
+
+    return True
+
+
 def exitGame():
     pygame.quit()
     exit()
 
 
-def colisionSameType(i, j):
-    newBall = Ball((balls[i].x + balls[j].x) / 2, (balls[i].y + balls[j].y) / 2, 0, 0,
-                   balls[i].fruitType.nextFruitType)
-    balls[i].hasColided = True
-    balls[j].hasColided = True
-    balls.append(newBall)
+space = pymunk.Space()
+space._set_collision_slop(0)
+space.gravity = (0, Gravity)
+# floor
+body = pymunk.Body(body_type=pymunk.Body.STATIC)
+shape = pymunk.Segment(body, (0.5 - screenPercents[0] / 2, 0.5 + screenPercents[1] / 2),
+                       (0.5 + screenPercents[0] / 2, 0.5 + screenPercents[1] / 2), 0.01)
+shape.collision_type = 99999999
+space.add(body, shape)
 
+# left Wall
+body = pymunk.Body(body_type=pymunk.Body.STATIC)
+shape = pymunk.Segment(body, (0.5 - screenPercents[0] / 2, 0.5 - screenPercents[1] / 2),
+                       (0.5 - screenPercents[0] / 2, 0.5 + screenPercents[1] / 2), 0.01)
+shape.collision_type = 99999999
+space.add(body, shape)
 
-def colisionDifferentType(i, j):
-    dx = balls[i].x - balls[j].x
-    dy = balls[i].y - balls[j].y
-    distance = balls[i].distance(balls[j])
-    overlap = balls[i].radius + balls[j].radius - distance
-    dx = dx / distance
-    dy = dy / distance
-
-    balls[i].x += dx * overlap / 2
-    balls[i].y += dy * overlap / 2
-    balls[j].x -= dx * overlap / 2
-    balls[j].y -= dy * overlap / 2
-
-    c1 = np.array([balls[i].x, balls[i].y])
-    c2 = np.array([balls[j].x, balls[j].y])
-    v1 = np.array([balls[i].velX, balls[i].velY])
-    v2 = np.array([balls[j].velX, balls[j].velY])
-    m1 = balls[i].radius
-    m2 = balls[j].radius
-
-    v1N = v1 - ((2 * m2) / (m1 + m2)) * (np.dot(v1 - v2, c1 - c2)) / (math.dist((0, 0), (c1 - c2))) * (c1 - c2)
-    v2N = v2 - ((2 * m1) / (m2 + m1)) * (np.dot(v2 - v1, c2 - c1)) / (math.dist((0, 0), (c2 - c1))) * (c2 - c1)
-    balls[i].velX = v1N[0]
-    balls[i].velY = v1N[1]
-    balls[j].velX = v2N[0]
-    balls[j].velY = v2N[1]
-
-    # normal = np.array([balls[i].x - xRR, balls[i].y - yRR])
-    # normal = normal / (math.dist((0,0), normal))
-    # tangent = np.array([-normal[1], normal[0]])
-    #
-    #
-    # vel1N = normal * v2
-    # vel1T = tangent * v1
-    # vel2N = normal * v2
-    # vel2T = tangent * v2
-    #
-    #
-    #
-    # vel1NScalar = ((math.dist((0,0), vel1N)) * (m1-m2) + 2 * m1 * (math.dist((0,0), vel2N))) / (m1 + m2)
-    # vel2NScalar = ((math.dist((0,0), vel2N)) * (m2-m1) + 2 * m2 * (math.dist((0,0), vel1N))) / (m2 + m1)
-    #
-    # vel1NNew = vel1NScalar * normal
-    # vel2NNew = vel2NScalar * normal
-    #
-    # vel1New = vel1NNew + vel1T
-    # vel2New = vel2NNew + vel2T
-    #
-    # print(v1,vel1New)
-    #
-    # balls[i].velX = vel1New[0]
-    # balls[i].velY = vel1New[1]
-    # balls[j].velX = vel2New[0]
-    # balls[j].velY = vel2New[1]
-    #
-    # balls[i].x += dx * overlap / 1.9
-    # balls[i].y += dy * overlap / 1.9
-    # balls[j].x -= dx * overlap / 1.9
-    # balls[j].y -= dy * overlap / 1.9
-
-    pygame.display.flip()
-
-    # update speed of both balls when they collide
-    # balls[i].velY = 0
-    # balls[j].velY = 0
-
-
-def handleColision():
-    global balls
-    for i in range(len(balls)):
-        if not balls[i].hasColided:
-            for j in range(i + 1, len(balls)):
-                if not balls[j].hasColided:
-                    if balls[i].collision(balls[j]) and balls[i].fruitType.nextFruitType is not None and balls[
-                        i].fruitType == balls[j].fruitType:
-                        colisionSameType(i, j)
-                    elif balls[i].collision(balls[j]):
-                        colisionDifferentType(i, j)
-
-    balls = [ball for ball in balls if not ball.hasColided]
+# right Wall
+body = pymunk.Body(body_type=pymunk.Body.STATIC)
+shape = pymunk.Segment(body, (0.5 + screenPercents[0] / 2, 0.5 - screenPercents[1] / 2),
+                       (0.5 + screenPercents[0] / 2, 0.5 + screenPercents[1] / 2), 0.01)
+shape.collision_type = 99999999
+space.add(body, shape)
 
 screenSize = getScreenSize()
 first = True
 start = time.time()
+
+nextFruit = Ball(0.8, 0.2, -1, random.choice(FruitType.fruitTypes[:4]))
+
+balls = []
+ammountGenerated = 0
+handler = space.add_collision_handler(0, 0)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 0))
+handler = space.add_collision_handler(1, 1)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 1))
+handler = space.add_collision_handler(2, 2)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 2))
+handler = space.add_collision_handler(3, 3)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 3))
+handler = space.add_collision_handler(4, 4)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 4))
+handler = space.add_collision_handler(5, 5)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 5))
+handler = space.add_collision_handler(6, 6)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 6))
+handler = space.add_collision_handler(7, 7)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 7))
+handler = space.add_collision_handler(8, 8)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 8))
+handler = space.add_collision_handler(9, 9)
+handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 9))
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exitGame()
         if event.type == pygame.MOUSEBUTTONDOWN:
-            balls.append(Ball((pygame.mouse.get_pos()[0] - xPadding) / screenSize, 0.2, 0.00, 0.01, FruitType.peach))
+            nextFruitX = max(min((pygame.mouse.get_pos()[0] - xPadding) / screenSize,
+                                 0.5 + screenPercents[0] / 2 - nextFruit.shape.radius),
+                             0.5 - screenPercents[0] / 2 + nextFruit.shape.radius)
+            nextFruit = Ball(nextFruitX, 0.2, ammountGenerated, nextFruit.fruitType)
+            nextFruit.addObject(space)
+            balls.append(nextFruit)
+            nextFruit = Ball(0.8, 0.2, ammountGenerated, random.choice(FruitType.fruitTypes[:4]))
+            ammountGenerated += 1
     keys = pygame.key.get_pressed()
     timeDelta = clock.tick(FPS) / 1000
+    space.step(timeDelta)
     screenSize = getScreenSize()
-    handleColision()
 
     window.fill((0, 0, 0))
-    line(window, 'white', (xPadding + (0.5 + screenPercents[0] / 2) * screenSize,yPadding + (0.5 - screenPercents[1] / 2) * screenSize), (xPadding + (0.5 + screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), 5)
-    line(window, 'white', (xPadding + (0.5 - screenPercents[0] / 2) * screenSize,yPadding + (0.5 - screenPercents[1] / 2) * screenSize), (xPadding + (0.5 - screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), 5)
-    line(window, 'white', (xPadding + (0.5 - screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), (xPadding + (0.5 + screenPercents[0] / 2) * screenSize,yPadding + (0.5 + screenPercents[1] / 2) * screenSize), 5)
+    line(window, 'white',
+         (xPadding + (0.5 + screenPercents[0] / 2) * screenSize, yPadding + (0.5 - screenPercents[1] / 2) * screenSize),
+         (xPadding + (0.5 + screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
+         5)
+    line(window, 'white',
+         (xPadding + (0.5 - screenPercents[0] / 2) * screenSize, yPadding + (0.5 - screenPercents[1] / 2) * screenSize),
+         (xPadding + (0.5 - screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
+         5)
+    line(window, 'white',
+         (xPadding + (0.5 - screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
+         (xPadding + (0.5 + screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
+         5)
     for ball in balls:
-        ball.update(timeDelta)
-        ball.draw(window, screenSize,xPadding,yPadding)
+        # ball.update(timeDelta)
+        ball.draw(window, screenSize, xPadding, yPadding)
+    nextFruit.draw(window, screenSize, xPadding, yPadding)
 
     pygame.display.flip()
