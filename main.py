@@ -1,5 +1,6 @@
 import os
 import time
+from typing import List
 
 import pygame
 import pymunk
@@ -12,32 +13,53 @@ import FruitType
 from Ball import Ball
 from Defenitions import *
 
+pygame.init()
+
 configPath = os.path.dirname(os.path.realpath(__file__))
 defaultWidth = 640 * 16 / 9
 defaultHeight = 640
-xPadding = max(defaultWidth - defaultHeight, 0) / 2
-yPadding = max(defaultHeight - defaultWidth, 0) / 2
+screenSize = min(defaultWidth, defaultHeight)
+xPadding = (defaultWidth - screenSize) / 2
+yPadding = (defaultHeight - screenSize) / 2
+
+ONE_X = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
+ZERO_X = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
+ONE_Y = (0.5 + screenPercents[1] / 2) * screenSize + yPadding
+ZERO_Y = (0.5 - screenPercents[1] / 2) * screenSize + yPadding
+
 window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
 clock = pygame.time.Clock()
 running = True
-
 biggestIndex = 0
 
 
 def getScreenSize():
+    global defaultWidth
+    global defaultHeight
     global xPadding
     global yPadding
+    global ONE_X
+    global ZERO_X
+    global ONE_Y
+    global ZERO_Y
     defaultWidth, defaultHeight = pygame.display.get_surface().get_size()
-    xPadding = max(defaultWidth - defaultHeight, 0) / 2
-    yPadding = max(defaultHeight - defaultWidth, 0) / 2
-    return min(defaultWidth, defaultHeight)
+    _screenSize = min(defaultWidth, defaultHeight)
+    xPadding = (defaultWidth - _screenSize) / 2
+    yPadding = (defaultHeight - _screenSize) / 2
+
+    ONE_X = (0.5 + screenPercents[0] / 2) * _screenSize + xPadding
+    ZERO_X = (0.5 - screenPercents[0] / 2) * _screenSize + xPadding
+    ONE_Y = (0.5 + screenPercents[1] / 2) * _screenSize + yPadding
+    ZERO_Y = (0.5 - screenPercents[1] / 2) * _screenSize + yPadding
+
+    return _screenSize
 
 
 def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, center: bool = True,
               absoluteSize: bool = True, font=None):
     if font is None:
         try:
-            font = pygame.font.Font(configPath + "/ARCADECLASSIC.TTF", size)
+            font = pygame.font.Font(configPath + "\\ARCADECLASSIC.TTF", size)
         except Exception:
             print("file missing")
             font = pygame.font.SysFont("Arial", size)
@@ -84,8 +106,8 @@ def handleCollision(arbiter, space, data):
     space.remove(colided[1].shape)
 
     newX, newY = (colided[0].body.position.x + colided[1].body.position.x) / 2, (
-                colided[0].body.position.y + colided[1].body.position.y) / 2
-    colidedBall = Ball(newX, newY, ammountGenerated, FruitType.fruitTypes[data + 1])
+            colided[0].body.position.y + colided[1].body.position.y) / 2
+    colidedBall = Ball(newX, newY, ammountGenerated, FruitType.fruitTypes[data + 1], addPoints)
     colidedBall.addObject(space)
     balls.append(colidedBall)
     ammountGenerated += 1
@@ -93,42 +115,80 @@ def handleCollision(arbiter, space, data):
     return True
 
 
+def setupSpace(balls: List[Ball]):
+    space = pymunk.Space()
+    space.collision_slop = 0
+    space.gravity = (0, Gravity)
+
+    # setup box
+    # floor
+    body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    shape = pymunk.Segment(body, (0, 1),
+                           (1, 1), 0.01)
+    shape.collision_type = 99999999
+    space.add(body, shape)
+
+    # left Wall
+    body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    shape = pymunk.Segment(body, (0, 0),
+                           (0, 1), 0.01)
+    shape.collision_type = 99999999
+    space.add(body, shape)
+
+    # right Wall
+    body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    shape = pymunk.Segment(body, (1, 0),
+                           (1, 1), 0.01)
+    shape.collision_type = 99999999
+    space.add(body, shape)
+
+    for ballToAdd in balls:
+        ballToAdd.addObject(space)
+
+    return space
+
+
+def drawBox():
+    global screenSize
+    screenSize = getScreenSize()
+    line(window, 'white',
+         (ONE_X, ZERO_Y),
+         (ONE_X, ONE_Y),
+         5)
+    line(window, 'white',
+         (ZERO_X, ZERO_Y),
+         (ZERO_X, ONE_Y),
+         5)
+    line(window, 'white',
+         (ZERO_X, ONE_Y),
+         (ONE_X, ONE_Y),
+         5)
+
+
 def exitGame():
     pygame.quit()
     exit()
 
 
-space = pymunk.Space()
-space._set_collision_slop(0)
-space.gravity = (0, Gravity)
-# floor
-body = pymunk.Body(body_type=pymunk.Body.STATIC)
-shape = pymunk.Segment(body, (0.5 - screenPercents[0] / 2, 0.5 + screenPercents[1] / 2),
-                       (0.5 + screenPercents[0] / 2, 0.5 + screenPercents[1] / 2), 0.01)
-shape.collision_type = 99999999
-space.add(body, shape)
+points = 0
+delayTime = 0.5
+delayStart = time.time() - delayTime
 
-# left Wall
-body = pymunk.Body(body_type=pymunk.Body.STATIC)
-shape = pymunk.Segment(body, (0.5 - screenPercents[0] / 2, 0.5 - screenPercents[1] / 2),
-                       (0.5 - screenPercents[0] / 2, 0.5 + screenPercents[1] / 2), 0.01)
-shape.collision_type = 99999999
-space.add(body, shape)
 
-# right Wall
-body = pymunk.Body(body_type=pymunk.Body.STATIC)
-shape = pymunk.Segment(body, (0.5 + screenPercents[0] / 2, 0.5 - screenPercents[1] / 2),
-                       (0.5 + screenPercents[0] / 2, 0.5 + screenPercents[1] / 2), 0.01)
-shape.collision_type = 99999999
-space.add(body, shape)
+def addPoints(np):
+    global points
+    points += np
+
+
+balls = []
+space = setupSpace(balls)
 
 screenSize = getScreenSize()
 first = True
 start = time.time()
 
-nextFruit = Ball(0.8, 0.2, -1, random.choice(FruitType.fruitTypes[:4]))
+nextFruitType = random.choice(FruitType.fruitTypes[:4])
 
-balls = []
 ammountGenerated = 0
 handler = space.add_collision_handler(0, 0)
 handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 0))
@@ -155,36 +215,31 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exitGame()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            nextFruitX = max(min((pygame.mouse.get_pos()[0] - xPadding) / screenSize,
-                                 0.5 + screenPercents[0] / 2 - nextFruit.shape.radius),
-                             0.5 - screenPercents[0] / 2 + nextFruit.shape.radius)
-            nextFruit = Ball(nextFruitX, 0.2, ammountGenerated, nextFruit.fruitType)
+        if event.type == pygame.MOUSEBUTTONDOWN and time.time() - delayStart > delayTime:
+            delayStart = time.time()
+            nextFruitX = max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                                 1 - nextFruitType.radius),
+                             0 + nextFruitType.radius)
+            nextFruit = Ball(nextFruitX, 0, ammountGenerated, nextFruitType, addPoints)
             nextFruit.addObject(space)
             balls.append(nextFruit)
-            nextFruit = Ball(0.8, 0.2, ammountGenerated, random.choice(FruitType.fruitTypes[:4]))
             ammountGenerated += 1
+            nextFruitType = random.choice(FruitType.fruitTypes[:4])
     keys = pygame.key.get_pressed()
     timeDelta = clock.tick(FPS) / 1000
     space.step(timeDelta)
     screenSize = getScreenSize()
 
     window.fill((0, 0, 0))
-    line(window, 'white',
-         (xPadding + (0.5 + screenPercents[0] / 2) * screenSize, yPadding + (0.5 - screenPercents[1] / 2) * screenSize),
-         (xPadding + (0.5 + screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
-         5)
-    line(window, 'white',
-         (xPadding + (0.5 - screenPercents[0] / 2) * screenSize, yPadding + (0.5 - screenPercents[1] / 2) * screenSize),
-         (xPadding + (0.5 - screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
-         5)
-    line(window, 'white',
-         (xPadding + (0.5 - screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
-         (xPadding + (0.5 + screenPercents[0] / 2) * screenSize, yPadding + (0.5 + screenPercents[1] / 2) * screenSize),
-         5)
+    drawBox()
     for ball in balls:
         # ball.update(timeDelta)
-        ball.draw(window, screenSize, xPadding, yPadding)
-    nextFruit.draw(window, screenSize, xPadding, yPadding)
+        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y)
+
+    if time.time() - delayStart > delayTime:
+        Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                              1 - nextFruitType.radius),
+                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y)
+    textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()
