@@ -6,9 +6,8 @@ import pymunk
 
 
 class Ball:
-    def __init__(self, x: float, y, position, fruitType: FruitType, addPoints):
+    def __init__(self, x: float, y, position, fruitType: FruitType):
         self.fruitType = fruitType
-        addPoints(fruitType.points)
         self.body, self.shape = self.getObject(x, y, fruitType.radius)
         self.position = position
         self.colFactor = 0.992

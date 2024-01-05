@@ -108,7 +108,8 @@ def handleCollision(arbiter, space, data):
 
     newX, newY = (colided[0].body.position.x + colided[1].body.position.x) / 2, (
             colided[0].body.position.y + colided[1].body.position.y) / 2
-    colidedBall = Ball(newX, newY, ammountGenerated, FruitType.fruitTypes[data + 1], addPoints)
+    colidedBall = Ball(newX, newY, ammountGenerated, FruitType.fruitTypes[data + 1])
+    addPoints(colidedBall.fruitType.points)
     colidedBall.addObject(space)
     balls.append(colidedBall)
     ammountGenerated += 1
@@ -148,6 +149,7 @@ def setupSpace(balls: List[Ball]):
 
     return space
 
+
 def generateNewFruit():
     global nextFruitType
     global balls
@@ -155,7 +157,8 @@ def generateNewFruit():
     nextFruitX = max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
                          1 - nextFruitType.radius),
                      0 + nextFruitType.radius)
-    nextFruit = Ball(nextFruitX, 0, ammountGenerated, nextFruitType, addPoints)
+    nextFruit = Ball(nextFruitX, 0, ammountGenerated, nextFruitType)
+    addPoints(nextFruit.fruitType.points)
     nextFruit.addObject(space)
     balls.append(nextFruit)
     ammountGenerated += 1
@@ -178,19 +181,25 @@ def drawBox():
          (ONE_X, ONE_Y),
          5)
 
+
 def updateScreen():
     screenSize = getScreenSize()
 
     window.fill((0, 0, 0))
     drawBox()
-    for ball in balls:
-        # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+    if isPlayer:
+        for ball in balls:
+            # ball.update(timeDelta)
+            ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
 
-    if time.time() - delayStart > delayTime:
-        Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
-                              1 - nextFruitType.radius),
-                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+        if time.time() - delayStart > delayTime:
+            Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                                  1 - nextFruitType.radius),
+                              0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+    else:
+        for ball in opBalls:
+            # ball.update(timeDelta)
+            ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
     textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()
@@ -205,14 +214,20 @@ points = 0
 delayTime = 0.5
 delayStart = time.time() - delayTime
 
-
+isPlayer = True
+opBalls = []
 def addPoints(np):
     global points
     points += np
 
+def getOpponentBalls():
+    return [Ball(0.25, 0.75, ammountGenerated, FruitType.cherry),Ball(0.75, 0.25, ammountGenerated, FruitType.cherry)]
+def getOpponentSpace():
+    return setupSpace(opBalls)
 
 balls = []
 space = setupSpace(balls)
+opSpace = None
 
 screenSize = getScreenSize()
 first = True
@@ -221,7 +236,7 @@ start = time.time()
 nextFruitType = random.choice(FruitType.fruitTypes[:4])
 
 ammountGenerated = 0
-for i in range(0,9):
+for i in range(0, 9):
     handler = space.add_collision_handler(i, i)
     handler.begin = (lambda arbiter, space, data, i=i: handleCollision(arbiter, space, i))
 
@@ -229,10 +244,17 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exitGame()
-        if event.type == pygame.MOUSEBUTTONDOWN and time.time() - delayStart > delayTime:
-            delayStart = time.time()
-            generateNewFruit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if time.time() - delayStart > delayTime and event.button == 1 and isPlayer:  # left click
+                delayStart = time.time()
+                generateNewFruit()
+            elif event.button == 3:  # right click
+                isPlayer = not isPlayer
+                opBalls = getOpponentBalls()
+                opSpace = setupSpace(opBalls)
     keys = pygame.key.get_pressed()
     timeDelta = clock.tick(FPS) / 1000
     space.step(timeDelta)
+    if not isPlayer:
+        opSpace.step(timeDelta)
     updateScreen()
