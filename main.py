@@ -94,6 +94,7 @@ def longTextBlock(texts: list[str], x: float, y: float, size: int, color: tuple 
 
 
 def handleCollision(arbiter, space, data):
+    print(data)
     global ammountGenerated
     colided = []
     for shape in arbiter.shapes:
@@ -147,6 +148,19 @@ def setupSpace(balls: List[Ball]):
 
     return space
 
+def generateNewFruit():
+    global nextFruitType
+    global balls
+    global ammountGenerated
+    nextFruitX = max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                         1 - nextFruitType.radius),
+                     0 + nextFruitType.radius)
+    nextFruit = Ball(nextFruitX, 0, ammountGenerated, nextFruitType, addPoints)
+    nextFruit.addObject(space)
+    balls.append(nextFruit)
+    ammountGenerated += 1
+    nextFruitType = random.choice(FruitType.fruitTypes[:4])
+
 
 def drawBox():
     global screenSize
@@ -163,6 +177,23 @@ def drawBox():
          (ZERO_X, ONE_Y),
          (ONE_X, ONE_Y),
          5)
+
+def updateScreen():
+    screenSize = getScreenSize()
+
+    window.fill((0, 0, 0))
+    drawBox()
+    for ball in balls:
+        # ball.update(timeDelta)
+        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+
+    if time.time() - delayStart > delayTime:
+        Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                              1 - nextFruitType.radius),
+                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+    textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
+
+    pygame.display.flip()
 
 
 def exitGame():
@@ -190,26 +221,9 @@ start = time.time()
 nextFruitType = random.choice(FruitType.fruitTypes[:4])
 
 ammountGenerated = 0
-handler = space.add_collision_handler(0, 0)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 0))
-handler = space.add_collision_handler(1, 1)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 1))
-handler = space.add_collision_handler(2, 2)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 2))
-handler = space.add_collision_handler(3, 3)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 3))
-handler = space.add_collision_handler(4, 4)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 4))
-handler = space.add_collision_handler(5, 5)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 5))
-handler = space.add_collision_handler(6, 6)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 6))
-handler = space.add_collision_handler(7, 7)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 7))
-handler = space.add_collision_handler(8, 8)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 8))
-handler = space.add_collision_handler(9, 9)
-handler.begin = (lambda arbiter, space, data: handleCollision(arbiter, space, 9))
+for i in range(0,9):
+    handler = space.add_collision_handler(i, i)
+    handler.begin = (lambda arbiter, space, data, i=i: handleCollision(arbiter, space, i))
 
 while running:
     for event in pygame.event.get():
@@ -217,29 +231,8 @@ while running:
             exitGame()
         if event.type == pygame.MOUSEBUTTONDOWN and time.time() - delayStart > delayTime:
             delayStart = time.time()
-            nextFruitX = max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
-                                 1 - nextFruitType.radius),
-                             0 + nextFruitType.radius)
-            nextFruit = Ball(nextFruitX, 0, ammountGenerated, nextFruitType, addPoints)
-            nextFruit.addObject(space)
-            balls.append(nextFruit)
-            ammountGenerated += 1
-            nextFruitType = random.choice(FruitType.fruitTypes[:4])
+            generateNewFruit()
     keys = pygame.key.get_pressed()
     timeDelta = clock.tick(FPS) / 1000
     space.step(timeDelta)
-    screenSize = getScreenSize()
-
-    window.fill((0, 0, 0))
-    drawBox()
-    for ball in balls:
-        # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
-
-    if time.time() - delayStart > delayTime:
-        Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
-                              1 - nextFruitType.radius),
-                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
-    textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
-
-    pygame.display.flip()
+    updateScreen()
