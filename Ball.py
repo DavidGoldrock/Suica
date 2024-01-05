@@ -25,10 +25,10 @@ class Ball:
         space.add(self.body, self.shape)
 
     @staticmethod
-    def drawBall(x,y,fruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y):
+    def drawBall(x,y,fruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize):
         circle(window, fruitType.color, (ZERO_X + x * (ONE_X - ZERO_X), ZERO_Y + y * (ONE_Y - ZERO_Y)),
                fruitType.radius * (ONE_X - ZERO_X))
-    def draw(self, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y):
-        Ball.drawBall(self.body.position.x, self.body.position.y, self.fruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y)
+    def draw(self, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize):
+        Ball.drawBall(self.body.position.x, self.body.position.y, self.fruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
 
 

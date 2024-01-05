@@ -234,12 +234,12 @@ while running:
     drawBox()
     for ball in balls:
         # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y)
+        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
 
     if time.time() - delayStart > delayTime:
         Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
                               1 - nextFruitType.radius),
-                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y)
+                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
     textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()
