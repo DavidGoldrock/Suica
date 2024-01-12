@@ -1,7 +1,7 @@
 import math
 import FruitType
 from pygame.draw import *
-from Defenitions import *
+from Definitions import *
 import pymunk
 
 
