@@ -43,6 +43,8 @@ def handleClient(conn):
             msg = Protocol.Request.fromByteArray(conn.recv(msgLength))  # receive number of bytes told by user
             # act in different ways depending on the request type
             match msg.RequestType:
+                case RequestType.ADD_BALL:
+                    gameThread.gameVars.generateNewFruit(msg.value["x"], msg.value["Cardinality"], msg.value["nextFruitType"])
                 case RequestType.CREATE_GAME:
                     if msg.value is not None:
                         key = Definitions.randStr(64)

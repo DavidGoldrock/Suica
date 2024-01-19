@@ -17,8 +17,8 @@ class GameThread(threading.Thread):
 
     def run(self):
         pygame.init()
-
         while self.connected.either():
-            pass
+            self.gameVars.player1Space.step(1 / FPS)
+            self.gameVars.player2Space.step(1 / FPS)
         del games[self.index]
         sys.exit()

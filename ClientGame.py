@@ -1,25 +1,15 @@
 import os
 
-import pymunk
 
 import Client
 import pygame
 from pygame.locals import *
 from pygame.draw import *
 import pygame_gui
-import pymunk
-import Definitions
-from Definitions import *
 import time
-from typing import List
 from Protocol import RequestType, ApplicationError
-
-import random
-
-import FruitType
-from Ball import Ball
 from Definitions import *
-
+import FruitType
 
 
 def getScreenSize():
@@ -70,7 +60,7 @@ def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, cent
 
 
 def longTextBlock(texts: list[str], x: float, y: float, size: int, color: tuple | str, center: bool = True,
-                  absoluteSize: bool = True, sizeInPixels=True,font=None):
+                  absoluteSize: bool = True, sizeInPixels=True, font=None):
     realSize = size
     if not sizeInPixels:
         realSize = size * 16 // 12
@@ -95,77 +85,6 @@ def exitGame():
     pygame.quit()
     exit()
 
-def handleCollision(arbiter, space, data):
-    print(data)
-    global ammountGenerated
-    colided = []
-    for shape in arbiter.shapes:
-        for ball in balls:
-            if ball.shape == shape:
-                colided.append(ball)
-    balls.remove(colided[0])
-    balls.remove(colided[1])
-    space.remove(colided[0].shape)
-    space.remove(colided[1].shape)
-
-    newX, newY = (colided[0].body.position.x + colided[1].body.position.x) / 2, (
-            colided[0].body.position.y + colided[1].body.position.y) / 2
-    colidedBall = Ball(newX, newY, ammountGenerated, FruitType.fruitTypes[data + 1])
-    addPoints(colidedBall.fruitType.points)
-    colidedBall.addObject(space)
-    balls.append(colidedBall)
-    ammountGenerated += 1
-
-    return True
-
-
-def setupSpace(balls: List[Ball]):
-    space = pymunk.Space()
-    space.collision_slop = 0
-    space.gravity = (0, Gravity)
-
-    # setup box
-    # floor
-    body = pymunk.Body(body_type=pymunk.Body.STATIC)
-    shape = pymunk.Segment(body, (0, 1),
-                           (1, 1), 0.01)
-    shape.collision_type = 99999999
-    space.add(body, shape)
-
-    # left Wall
-    body = pymunk.Body(body_type=pymunk.Body.STATIC)
-    shape = pymunk.Segment(body, (0, 0),
-                           (0, 1), 0.01)
-    shape.collision_type = 99999999
-    space.add(body, shape)
-
-    # right Wall
-    body = pymunk.Body(body_type=pymunk.Body.STATIC)
-    shape = pymunk.Segment(body, (1, 0),
-                           (1, 1), 0.01)
-    shape.collision_type = 99999999
-    space.add(body, shape)
-
-    for ballToAdd in balls:
-        ballToAdd.addObject(space)
-
-    return space
-
-
-def generateNewFruit():
-    global nextFruitType
-    global balls
-    global ammountGenerated
-    nextFruitX = max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
-                         1 - nextFruitType.radius),
-                     0 + nextFruitType.radius)
-    nextFruit = Ball(nextFruitX, 0, ammountGenerated, nextFruitType)
-    addPoints(nextFruit.fruitType.points)
-    nextFruit.addObject(space)
-    balls.append(nextFruit)
-    ammountGenerated += 1
-    nextFruitType = random.choice(FruitType.fruitTypes[:4])
-
 
 def drawBox():
     global screenSize
@@ -184,42 +103,31 @@ def drawBox():
          5)
 
 
-def updateScreen():
+def updateScreen(gameVars):
     screenSize = getScreenSize()
-
     window.fill((0, 0, 0))
     drawBox()
-    if isPlayer:
-        for ball in balls:
-            # ball.update(timeDelta)
-            ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+    for ball in gameVars.player1Balls:
+        # ball.update(timeDelta)
+        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
 
-        if time.time() - delayStart > delayTime:
-            Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
-                                  1 - nextFruitType.radius),
-                              0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
-    else:
-        for ball in opBalls:
-            # ball.update(timeDelta)
-            ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+    if time.time() - delayStart > delayTime:
+        Ball.drawBall(max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                              1 - nextFruitType.radius),
+                          0 + nextFruitType.radius), 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y,
+                      screenSize)
     textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()
+
 
 points = 0
 delayTime = 0.5
 delayStart = time.time() - delayTime
 
-isPlayer = True
-opBalls = []
-def addPoints(np):
-    global points
-    points += np
 
-def getOpponentBalls():
-    return [Ball(0.25, 0.75, ammountGenerated, FruitType.cherry),Ball(0.75, 0.25, ammountGenerated, FruitType.cherry)]
-def getOpponentSpace():
-    return setupSpace(opBalls)
+
+
 
 pygame.init()
 configPath = os.path.dirname(os.path.realpath(__file__))
@@ -238,9 +146,7 @@ clock = pygame.time.Clock()
 running = True
 hub = True
 
-
 balls = []
-space = setupSpace(balls)
 opSpace = None
 
 screenSize = getScreenSize()
@@ -250,9 +156,6 @@ start = time.time()
 nextFruitType = random.choice(FruitType.fruitTypes[:4])
 
 ammountGenerated = 0
-for i in range(0, 9):
-    handler = space.add_collision_handler(i, i)
-    handler.begin = (lambda arbiter, space, data, i=i: handleCollision(arbiter, space, i))
 
 # server is down
 while not Client.isConnected:
@@ -276,33 +179,38 @@ try:
     # TODO menu, button for creating games, list of current games to join, textbox to enter password, pause menu (with
     #  compatibility with server)
 
-
     # Cardinality = Client.send(RequestType.JOIN_GAME, {"name": "chen", "password": None}).value
 
-
-    manager = pygame_gui.UIManager([defaultWidth, defaultHeight])
-    CreateGameButton = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((0 + xPadding, getScreenSize() - 50 + yPadding), (130, 50 + yPadding)),
-                                                    text='Create Game',
-                                                    manager=manager)
-    RefreshButton = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((130 + xPadding, getScreenSize() - 50 + yPadding), (130, 50 + yPadding)),
-                                                 text='Refresh',
-                                                 manager=manager)
+    manager = pygame_gui.UIManager((int(defaultWidth), defaultHeight))
+    CreateGameButton = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((0 + xPadding, getScreenSize() - 50 + yPadding), (130, 50 + yPadding)),
+        text='Create Game',
+        manager=manager)
+    RefreshButton = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((130 + xPadding, getScreenSize() - 50 + yPadding), (130, 50 + yPadding)),
+        text='Refresh',
+        manager=manager)
     NameTextBox = pygame_gui.elements.UITextEntryBox(
-        relative_rect=pygame.Rect((getScreenSize() / 2 - 65 + xPadding, getScreenSize() / 2 - 85 + yPadding), (130, 50 + yPadding)),
+        relative_rect=pygame.Rect((getScreenSize() / 2 - 65 + xPadding, getScreenSize() / 2 - 85 + yPadding),
+                                  (130, 50 + yPadding)),
         manager=manager)
     PasswordTextBox = pygame_gui.elements.UITextEntryBox(
-        relative_rect=pygame.Rect((getScreenSize() / 2 - 65 + xPadding, getScreenSize() / 2 - 25 + yPadding), (130, 50 + yPadding)),
+        relative_rect=pygame.Rect((getScreenSize() / 2 - 65 + xPadding, getScreenSize() / 2 - 25 + yPadding),
+                                  (130, 50 + yPadding)),
         manager=manager)
     OKButton = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((getScreenSize() / 2 + 65 + xPadding, getScreenSize() / 2 + 25 + yPadding), (65, 50 + yPadding)),
+        relative_rect=pygame.Rect((getScreenSize() / 2 + 65 + xPadding, getScreenSize() / 2 + 25 + yPadding),
+                                  (65, 50 + yPadding)),
         text='OK',
         manager=manager)
     CancelButton = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((getScreenSize() / 2 + 130 + xPadding, getScreenSize() / 2 + 25 + yPadding), (65, 50 + yPadding)),
+        relative_rect=pygame.Rect((getScreenSize() / 2 + 130 + xPadding, getScreenSize() / 2 + 25 + yPadding),
+                                  (65, 50 + yPadding)),
         text='Cancel',
         manager=manager)
     gameButtons = [pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((0 + xPadding, getScreenSize() / 5 + 50 * i + yPadding), (getScreenSize(), 50 + yPadding)),
+        relative_rect=pygame.Rect((0 + xPadding, getScreenSize() / 5 + 50 * i + yPadding),
+                                  (getScreenSize(), 50 + yPadding)),
         text=game,
         manager=manager) for i, game in enumerate(games)]
     CancelButton.hide()
@@ -375,7 +283,8 @@ try:
                     for button in gameButtons:
                         button.kill()
                     gameButtons = [pygame_gui.elements.UIButton(
-                        relative_rect=pygame.Rect((0, getScreenSize() / 5 + 50 * i), (getScreenSize(), 50)),
+                        relative_rect=pygame.Rect((0 + xPadding, getScreenSize() / 5 + 50 * i + yPadding),
+                                                  (getScreenSize(), 50 + yPadding)),
                         text=game,
                         manager=manager) for i, game in enumerate(games)]
             manager.process_events(event)
@@ -385,23 +294,20 @@ try:
         window.fill((0, 0, 0))
     print(Cardinality)
     while running:
+        gameVars = Client.sendAndRecv(RequestType.GET_GAME_VARS).value
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exitGame()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if time.time() - delayStart > delayTime and event.button == 1 and isPlayer:  # left click
+                if time.time() - delayStart > delayTime and event.button == 1:  # left click
                     delayStart = time.time()
-                    generateNewFruit()
-                elif event.button == 3:  # right click
-                    isPlayer = not isPlayer
-                    opBalls = getOpponentBalls()
-                    opSpace = setupSpace(opBalls)
+                    Client.send(RequestType.ADD_BALL, {"x":  max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
+                         1 - nextFruitType.radius),
+                     0 + nextFruitType.radius), "Cardinality": Cardinality, "nextFruitType": nextFruitType})
+                    nextFruitType = random.choice(FruitType.fruitTypes[:4])
         keys = pygame.key.get_pressed()
         timeDelta = clock.tick(FPS) / 1000
-        space.step(timeDelta)
-        if not isPlayer:
-            opSpace.step(timeDelta)
-        updateScreen()
+        updateScreen(gameVars)
 except ApplicationError as e:
     while True:
         for event in pygame.event.get():
@@ -409,8 +315,8 @@ except ApplicationError as e:
                 exitGame()
         keys = pygame.key.get_pressed()
         clock.tick(FPS)
-        textBlock("ERROR SCREEN", 0.5, 0.1, 40, "white",font=pygame.font.SysFont("Arial", 40))
-        textBlock(str(e), 0.5, 0.5, 25, "white",font=pygame.font.SysFont("Arial", 25))
+        textBlock("ERROR SCREEN", 0.5, 0.1, 40, "white", font=pygame.font.SysFont("Arial", 40))
+        textBlock(str(e), 0.5, 0.5, 25, "white", font=pygame.font.SysFont("Arial", 25))
         pygame.display.flip()
         window.fill((255, 0, 0))
 exitGame()

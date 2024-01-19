@@ -6,10 +6,9 @@ import pymunk
 
 
 class Ball:
-    def __init__(self, x: float, y, position, fruitType: FruitType):
+    def __init__(self, x: float, y, fruitType: FruitType):
         self.fruitType = fruitType
         self.body, self.shape = self.getObject(x, y, fruitType.radius)
-        self.position = position
         self.colFactor = 0.992
         self.hasColided = False
     def getObject(self, x, y, radius):

@@ -11,6 +11,7 @@ class RequestType(Enum):
     JOIN_GAME = 131
     RETRIEVE_GAMES = 132  # 4 + 128
     GET_GAME_VARS = 133  # 5 + 128
+    ADD_BALL = 134  # 5 + 128
 
     def toByte(self):
         return self.value.to_bytes(1, 'little')
