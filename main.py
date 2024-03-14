@@ -23,8 +23,8 @@ yPadding = (defaultHeight - screenSize) / 2
 
 # The frame of the game: ZERO_X is the point at which the box starts etc.
 # This frame can later be moved around
-ONE_X = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
-ZERO_X = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
+ONE_X_P1 = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
+ZERO_X_P1 = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
 ONE_Y = (0.5 + screenPercents[1] / 2) * screenSize + yPadding
 ZERO_Y = (0.5 - screenPercents[1] / 2) * screenSize + yPadding
 
@@ -39,8 +39,8 @@ def getScreenSize():
     global defaultHeight
     global xPadding
     global yPadding
-    global ONE_X
-    global ZERO_X
+    global ONE_X_P1
+    global ZERO_X_P1
     global ONE_Y
     global ZERO_Y
     defaultWidth, defaultHeight = pygame.display.get_surface().get_size()
@@ -150,8 +150,8 @@ def setupSpace(balls: List[Ball]):
 def generateNewFruit():
     global nextFruitType
     global balls
-    mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X + nextFruitType.radius * (ONE_X - ZERO_X), ONE_X - nextFruitType.radius * (ONE_X - ZERO_X))
-    mousePercent = ((mousePosition - ZERO_X) / (ONE_X - ZERO_X))
+    mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X_P1 + nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1), ONE_X_P1 - nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1))
+    mousePercent = ((mousePosition - ZERO_X_P1) / (ONE_X_P1 - ZERO_X_P1))
     nextFruit = Ball(mousePercent, 0, nextFruitType)
     addPoints(nextFruit.fruitType.points)
     nextFruit.addObject(space)
@@ -163,31 +163,31 @@ def drawPlayerBox():
     global screenSize
     screenSize = getScreenSize()
     line(window, 'white',
-         (ONE_X, ZERO_Y),
-         (ONE_X, ONE_Y),
+         (ONE_X_P1, ZERO_Y),
+         (ONE_X_P1, ONE_Y),
          5)
     line(window, 'white',
-         (ZERO_X, ZERO_Y),
-         (ZERO_X, ONE_Y),
+         (ZERO_X_P1, ZERO_Y),
+         (ZERO_X_P1, ONE_Y),
          5)
     line(window, 'white',
-         (ZERO_X, ONE_Y),
-         (ONE_X, ONE_Y),
+         (ZERO_X_P1, ONE_Y),
+         (ONE_X_P1, ONE_Y),
          5)
 
 
 def drawOpponentBox():
     line(window, 'white',
-         ((screenSize - ZERO_X) + ONE_X, ZERO_Y),
-         ((screenSize - ZERO_X) + ONE_X, ONE_Y),
+         ((screenSize - ZERO_X_P1) + ONE_X_P1, ZERO_Y),
+         ((screenSize - ZERO_X_P1) + ONE_X_P1, ONE_Y),
          5)
     line(window, 'white',
-         ((screenSize - ZERO_X) + ZERO_X, ZERO_Y),
-         ((screenSize - ZERO_X) + ZERO_X, ONE_Y),
+         ((screenSize - ZERO_X_P1) + ZERO_X_P1, ZERO_Y),
+         ((screenSize - ZERO_X_P1) + ZERO_X_P1, ONE_Y),
          5)
     line(window, 'white',
-         ((screenSize - ZERO_X) + ZERO_X, ONE_Y),
-         ((screenSize - ZERO_X) + ONE_X, ONE_Y),
+         ((screenSize - ZERO_X_P1) + ZERO_X_P1, ONE_Y),
+         ((screenSize - ZERO_X_P1) + ONE_X_P1, ONE_Y),
          5)
 
 
@@ -197,24 +197,24 @@ def updateScreen():
     window.fill((0, 0, 0))
     drawPlayerBox()
     drawOpponentBox()
-    circle(window,'red',(ZERO_X,ZERO_Y), 5)
-    circle(window,'red',(ZERO_X,ONE_Y), 5)
-    circle(window,'red',(ONE_X,ZERO_Y), 5)
-    circle(window,'red',(ONE_X,ONE_Y), 5)
+    circle(window,'red', (ZERO_X_P1, ZERO_Y), 5)
+    circle(window,'red', (ZERO_X_P1, ONE_Y), 5)
+    circle(window,'red', (ONE_X_P1, ZERO_Y), 5)
+    circle(window,'red', (ONE_X_P1, ONE_Y), 5)
 
     for ball in balls:
         # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+        ball.draw(window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y, screenSize)
 
     if time.time() - delayStart > delayTime:
         # mouse clamp position to window
-        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X + nextFruitType.radius * (ONE_X - ZERO_X), ONE_X - nextFruitType.radius * (ONE_X - ZERO_X))
-        mousePercent = ((mousePosition - ZERO_X) / (ONE_X - ZERO_X))
-        Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y,
+        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X_P1 + nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1), ONE_X_P1 - nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1))
+        mousePercent = ((mousePosition - ZERO_X_P1) / (ONE_X_P1 - ZERO_X_P1))
+        Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y,
                       screenSize)
     for ball in opBalls:
         # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+        ball.draw(window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y, screenSize)
     textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()

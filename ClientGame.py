@@ -19,8 +19,10 @@ def getScreenSize():
     global defaultHeight
     global xPadding
     global yPadding
-    global ONE_X
-    global ZERO_X
+    global ONE_X_P1
+    global ZERO_X_P1
+    global ONE_X_P2
+    global ZERO_X_P2
     global ONE_Y
     global ZERO_Y
     defaultWidth, defaultHeight = pygame.display.get_surface().get_size()
@@ -28,8 +30,10 @@ def getScreenSize():
     xPadding = (defaultWidth - _screenSize) / 2
     yPadding = (defaultHeight - _screenSize) / 2
 
-    ONE_X = (screenPercents[0] / 2) * _screenSize + xPadding
-    ZERO_X = (-screenPercents[0] / 2) * _screenSize + xPadding
+    ONE_X_P1 = (screenPercents[0] / 2) * _screenSize + xPadding
+    ZERO_X_P1 = (-screenPercents[0] / 2) * _screenSize + xPadding
+    ONE_X_P2 = (_screenSize - ZERO_X_P1) + ONE_X_P1
+    ZERO_X_P2 = (_screenSize - ZERO_X_P1) + ZERO_X_P1
     ONE_Y = (0.5 + screenPercents[1] / 2) * _screenSize + yPadding
     ZERO_Y = (0.5 - screenPercents[1] / 2) * _screenSize + yPadding
 
@@ -37,14 +41,17 @@ def getScreenSize():
 
 def getClampedMouse(Cardinality):
     if Cardinality == 0:
-        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X + nextFruitType.radius * (ONE_X - ZERO_X),
-                              ONE_X - nextFruitType.radius * (ONE_X - ZERO_X))
-        mousePercent = ((mousePosition - ZERO_X) / (ONE_X - ZERO_X))
+        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X_P1 + nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1),
+                              ONE_X_P1 - nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1))
+        mousePercent = ((mousePosition - ZERO_X_P1) / (ONE_X_P1 - ZERO_X_P1))
+        return mousePercent
+
     else:
-        mousePosition = clamp(pygame.mouse.get_pos()[0], ((screenSize - ZERO_X) + ZERO_X) + nextFruitType.radius * (((screenSize - ZERO_X) + ONE_X) - ((screenSize - ZERO_X) + ZERO_X)),
-                              ((screenSize - ZERO_X) + ONE_X) - nextFruitType.radius * (((screenSize - ZERO_X) + ONE_X) - ((screenSize - ZERO_X) + ZERO_X)))
-        mousePercent = ((mousePosition - ((screenSize - ZERO_X) + ZERO_X)) / (((screenSize - ZERO_X) + ONE_X) - ((screenSize - ZERO_X) + ZERO_X)))
-    return mousePercent
+        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X_P2 + nextFruitType.radius * (ONE_X_P2 - ZERO_X_P2),
+                              ONE_X_P2 - nextFruitType.radius * (ONE_X_P2 - ZERO_X_P2))
+        mousePercent = ((mousePosition - ZERO_X_P2) / (ONE_X_P2 - ZERO_X_P2))
+        return mousePercent
+
 
 def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, center: bool = True,
               absoluteSize: bool = True, font=None):
@@ -97,31 +104,31 @@ def drawPlayerBox():
     global screenSize
     screenSize = getScreenSize()
     line(window, 'white',
-         (ONE_X, ZERO_Y),
-         (ONE_X, ONE_Y),
+         (ONE_X_P1, ZERO_Y),
+         (ONE_X_P1, ONE_Y),
          5)
     line(window, 'white',
-         (ZERO_X, ZERO_Y),
-         (ZERO_X, ONE_Y),
+         (ZERO_X_P1, ZERO_Y),
+         (ZERO_X_P1, ONE_Y),
          5)
     line(window, 'white',
-         (ZERO_X, ONE_Y),
-         (ONE_X, ONE_Y),
+         (ZERO_X_P1, ONE_Y),
+         (ONE_X_P1, ONE_Y),
          5)
 
 
 def drawOpponentBox():
     line(window, 'white',
-         ((screenSize - ZERO_X) + ONE_X, ZERO_Y),
-         ((screenSize - ZERO_X) + ONE_X, ONE_Y),
+         (ONE_X_P2, ZERO_Y),
+         (ONE_X_P2, ONE_Y),
          5)
     line(window, 'white',
-         ((screenSize - ZERO_X) + ZERO_X, ZERO_Y),
-         ((screenSize - ZERO_X) + ZERO_X, ONE_Y),
+         (ZERO_X_P2, ZERO_Y),
+         (ZERO_X_P2, ONE_Y),
          5)
     line(window, 'white',
-         ((screenSize - ZERO_X) + ZERO_X, ONE_Y),
-         ((screenSize - ZERO_X) + ONE_X, ONE_Y),
+         (ZERO_X_P2, ONE_Y),
+         (ONE_X_P2, ONE_Y),
          5)
 
 
@@ -131,37 +138,49 @@ def updateScreen(currentGameVars):
     window.fill((0, 0, 0))
     drawPlayerBox()
     drawOpponentBox()
-    circle(window, 'red', (ZERO_X, ZERO_Y), 5)
-    circle(window, 'red', (ZERO_X, ONE_Y), 5)
-    circle(window, 'red', (ONE_X, ZERO_Y), 5)
-    circle(window, 'red', (ONE_X, ONE_Y), 5)
+    circle(window, 'red', (ZERO_X_P1, ZERO_Y), 5)
+    circle(window, 'red', (ZERO_X_P1, ONE_Y), 5)
+    circle(window, 'red', (ONE_X_P1, ZERO_Y), 5)
+    circle(window, 'red', (ONE_X_P1, ONE_Y), 5)
+    circle(window, 'red', (getClampedMouse(0) * (ONE_X_P1 - ZERO_X_P1) + ZERO_X_P1, ONE_Y), 5)
+
+    circle(window, 'green', (ZERO_X_P2, ZERO_Y), 5)
+    circle(window, 'green', (ZERO_X_P2, ONE_Y), 5)
+    circle(window, 'green', (ONE_X_P2, ZERO_Y), 5)
+    circle(window, 'green', (ONE_X_P2, ONE_Y), 5)
+    circle(window, 'green', (getClampedMouse(1) * (ONE_X_P2 - ZERO_X_P2) + ZERO_X_P2, ONE_Y), 5)
+
 
     player1Balls = currentGameVars.player1Balls
     player2Balls = currentGameVars.player2Balls
 
     for ball in player1Balls:
-        # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+        ball.draw(window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y, screenSize)
+
+    for ball in player2Balls:
+        ball.draw(window, ZERO_X_P2, ONE_X_P2, ZERO_Y, ONE_Y, screenSize)
 
     if time.time() - delayStart > delayTime:
         # mouse clamp position to window
         mousePercent = getClampedMouse(Cardinality)
         if Cardinality == 0:
-            Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y,
+            Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y,
                           screenSize)
         else:
-            Ball.drawBall(mousePercent, 0, nextFruitType, window, (screenSize - ZERO_X) + ZERO_X,
-                          (screenSize - ZERO_X) + ONE_X, ZERO_Y, ONE_Y,
+            Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X_P2,
+                          ONE_X_P2, ZERO_Y, ONE_Y,
                           screenSize)
-    for ball in player2Balls:
-        # ball.update(timeDelta)
-        ball.draw(window, (screenSize - ZERO_X) + ZERO_X, (screenSize - ZERO_X) + ONE_X, ZERO_Y, ONE_Y, screenSize)
+    points = 0
+    if Cardinality == 0:
+        points = currentGameVars.player1Score
+    else:
+        points = currentGameVars.player2Score
+
     textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()
 
 
-points = 0
 delayTime = 0.5
 delayStart = time.time() - delayTime
 
@@ -173,8 +192,10 @@ screenSize = min(defaultWidth, defaultHeight)
 xPadding = (defaultWidth - screenSize) / 2
 yPadding = (defaultHeight - screenSize) / 2
 
-ONE_X = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
-ZERO_X = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
+ONE_X_P1 = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
+ZERO_X_P1 = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
+ONE_X_P2 = (screenSize - ZERO_X_P1) + (0.5 + screenPercents[0] / 2) * screenSize + xPadding
+ZERO_X_P2 = (screenSize - ZERO_X_P1) + (0.5 - screenPercents[0] / 2) * screenSize + xPadding
 ONE_Y = (0.5 + screenPercents[1] / 2) * screenSize + yPadding
 ZERO_Y = (0.5 - screenPercents[1] / 2) * screenSize + yPadding
 window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
