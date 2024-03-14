@@ -22,7 +22,7 @@ def send(typ: RequestType, value=None):
     if HEADER - len(msgLength) < 0:
         raise ValueError(f"[ERROR] HEADER size too small, increase size of HEADER by {len(msgLength) - HEADER} bytes")
     msgLength += b' ' * (HEADER - len(msgLength))
-    if len(message) > 8 ** Definitions.HEADER:
+    if len(msgLength) > Definitions.HEADER:
         raise Exception("Header Size Overrun")
     client.send(msgLength + message)
 
