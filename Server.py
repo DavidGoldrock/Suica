@@ -27,6 +27,8 @@ def sendMessage(code: int, conn: socket.socket, value=None, ShouldPrint=False):
     # send length of message in header bytes
     msgLength = str(len(message)).encode(Definitions.FORMAT)
     msgLength += b' ' * (Definitions.HEADER - len(msgLength))
+    if len(message) > 8**Definitions.HEADER:
+        raise Exception("Header Size Overrun")
     conn.send(msgLength + message)
 
 
