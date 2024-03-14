@@ -13,8 +13,27 @@ import FruitType
 # Default values
 Cardinality = 0
 
+# Screem Values
+defaultWidth = 640 * 16 / 9
+defaultHeight = 640
+screenSize = min(defaultWidth, defaultHeight)
+xPadding = (defaultWidth - screenSize) / 2
+yPadding = (defaultHeight - screenSize) / 2
+
+# Box points, seperated by Player 1 and 2
+ONE_X_P1 = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
+ZERO_X_P1 = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
+ONE_X_P2 = (screenSize - ZERO_X_P1) + (0.5 + screenPercents[0] / 2) * screenSize + xPadding
+ZERO_X_P2 = (screenSize - ZERO_X_P1) + (0.5 - screenPercents[0] / 2) * screenSize + xPadding
+ONE_Y = (0.5 + screenPercents[1] / 2) * screenSize + yPadding
+ZERO_Y = (0.5 - screenPercents[1] / 2) * screenSize + yPadding
+
 
 def getScreenSize():
+    """
+    every Resize this function resets all screen values
+    :return: the minimum between the width and the height of the window
+    """
     global defaultWidth
     global defaultHeight
     global xPadding
@@ -39,7 +58,15 @@ def getScreenSize():
 
     return _screenSize
 
-def getClampedMouse(Cardinality):
+
+def getClampedMouse(Cardinality: int):
+    """
+    clamps the position of the mouse with the box of the player
+    compensates for the radius of the fruit
+    returns as percent
+    :param Cardinality: whether it is player 1 or 2
+    :return: the point of the mouse clamped by the player's box
+    """
     if Cardinality == 0:
         mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X_P1 + nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1),
                               ONE_X_P1 - nextFruitType.radius * (ONE_X_P1 - ZERO_X_P1))
@@ -55,6 +82,17 @@ def getClampedMouse(Cardinality):
 
 def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, center: bool = True,
               absoluteSize: bool = True, font=None):
+    """
+    writes text to screen
+    :param text: text to write
+    :param x: x position of the text
+    :param y: y position of the text
+    :param size: size of the text in pixels / percent
+    :param color: color of the text: string or rgb tuple
+    :param center: should the position be of the center of the text or the top left point. default is center
+    :param absoluteSize: should the size be given as percent or pixels. default is percent
+    :param font: custom font object, default is the ARCADECLASSIC.TTF that comes with the game
+    """
     if font is None:
         try:
             font = pygame.font.Font(configPath + "\\ARCADECLASSIC.TTF", size)
@@ -75,6 +113,18 @@ def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, cent
 
 def longTextBlock(texts: list[str], x: float, y: float, size: int, color: tuple | str, center: bool = True,
                   absoluteSize: bool = True, sizeInPixels=True, font=None):
+    """
+    writes text to screen
+    :param texts:
+    :param x: x position of the text
+    :param y: y position of the text
+    :param color: color of the text: string or rgb tuple
+    :param center: should the position be of the center of the text or the top left point. default is center
+    :param absoluteSize: should the size be given as percent or pixels. default is percent
+    :param size: size of the text in pixels / percent
+    :param sizeInPixels: in case you wanna put the size as word size? IDK if I should remove this
+    :param font: custom font object, default is the ARCADECLASSIC.TTF that comes with the game
+    """
     realSize = size
     if not sizeInPixels:
         realSize = size * 16 // 12
@@ -92,6 +142,9 @@ def longTextBlock(texts: list[str], x: float, y: float, size: int, color: tuple 
 
 
 def exitGame():
+    """
+    sends message to the server of quit and closes window
+    """
     try:
         Client.send(RequestType.DISCONNECT)
     except OSError:
@@ -100,7 +153,10 @@ def exitGame():
     exit()
 
 
-def drawPlayerBox():
+def drawPlayer1Box():
+    """
+    draws player 1 box
+    """
     global screenSize
     screenSize = getScreenSize()
     line(window, 'white',
@@ -117,7 +173,10 @@ def drawPlayerBox():
          5)
 
 
-def drawOpponentBox():
+def drawPlayer2Box():
+    """
+    draws player 2 box
+    """
     line(window, 'white',
          (ONE_X_P2, ZERO_Y),
          (ONE_X_P2, ONE_Y),
@@ -133,11 +192,22 @@ def drawOpponentBox():
 
 
 def updateScreen(currentGameVars):
+    """
+    does all drawing to screen
+    :param currentGameVars: Defenitions.Game object of the current game vars
+    """
+    # Resets screenSize
+    global screenSize
     screenSize = getScreenSize()
 
+    # clear screen
     window.fill((0, 0, 0))
-    drawPlayerBox()
-    drawOpponentBox()
+
+    # draw the boxes
+    drawPlayer1Box()
+    drawPlayer2Box()
+
+    # Debugging drawing
     circle(window, 'red', (ZERO_X_P1, ZERO_Y), 5)
     circle(window, 'red', (ZERO_X_P1, ONE_Y), 5)
     circle(window, 'red', (ONE_X_P1, ZERO_Y), 5)
@@ -150,19 +220,19 @@ def updateScreen(currentGameVars):
     circle(window, 'green', (ONE_X_P2, ONE_Y), 5)
     circle(window, 'green', (getClampedMouse(1) * (ONE_X_P2 - ZERO_X_P2) + ZERO_X_P2, ONE_Y), 5)
 
-
-    player1Balls = currentGameVars.player1Balls
-    player2Balls = currentGameVars.player2Balls
-
-    for ball in player1Balls:
+    # draws all balls
+    for ball in currentGameVars.player1Balls:
         ball.draw(window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y, screenSize)
 
-    for ball in player2Balls:
+    for ball in currentGameVars.player2Balls:
         ball.draw(window, ZERO_X_P2, ONE_X_P2, ZERO_Y, ONE_Y, screenSize)
 
+    # If the cooldown from the last fruit ended
     if time.time() - delayStart > delayTime:
         # mouse clamp position to window
         mousePercent = getClampedMouse(Cardinality)
+
+        # draw ball in the correct box
         if Cardinality == 0:
             Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X_P1, ONE_X_P1, ZERO_Y, ONE_Y,
                           screenSize)
@@ -170,7 +240,7 @@ def updateScreen(currentGameVars):
             Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X_P2,
                           ONE_X_P2, ZERO_Y, ONE_Y,
                           screenSize)
-    points = 0
+    # choose correct points
     if Cardinality == 0:
         points = currentGameVars.player1Score
     else:
@@ -181,36 +251,28 @@ def updateScreen(currentGameVars):
     pygame.display.flip()
 
 
+pygame.init()
+
+# time to delay between fruits
 delayTime = 0.5
 delayStart = time.time() - delayTime
 
-pygame.init()
+# path to current directory
 configPath = os.path.dirname(os.path.realpath(__file__))
-defaultWidth = 640 * 16 / 9
-defaultHeight = 640
-screenSize = min(defaultWidth, defaultHeight)
-xPadding = (defaultWidth - screenSize) / 2
-yPadding = (defaultHeight - screenSize) / 2
 
-ONE_X_P1 = (0.5 + screenPercents[0] / 2) * screenSize + xPadding
-ZERO_X_P1 = (0.5 - screenPercents[0] / 2) * screenSize + xPadding
-ONE_X_P2 = (screenSize - ZERO_X_P1) + (0.5 + screenPercents[0] / 2) * screenSize + xPadding
-ZERO_X_P2 = (screenSize - ZERO_X_P1) + (0.5 - screenPercents[0] / 2) * screenSize + xPadding
-ONE_Y = (0.5 + screenPercents[1] / 2) * screenSize + yPadding
-ZERO_Y = (0.5 - screenPercents[1] / 2) * screenSize + yPadding
 window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
 clock = pygame.time.Clock()
-running = True
+
+# is in create game / join game screen
 hub = True
+# is game on
+running = True
 
-
+# update screenSize
 screenSize = getScreenSize()
-first = True
-start = time.time()
 
+# the fruit Type of the next ball the player will drop
 nextFruitType = random.choice(FruitType.fruitTypes[:4])
-
-amountGenerated = 0
 
 # server is down
 while not Client.isConnected:
@@ -231,10 +293,6 @@ while not Client.isConnected:
 try:
     games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
 
-    # TODO menu, button for creating games, list of current games to join, textbox to enter password, pause menu (with
-    #  compatibility with server)
-
-    # Cardinality = Client.send(RequestType.JOIN_GAME, {"name": "chen", "password": None}).value
 
     manager = pygame_gui.UIManager((int(defaultWidth), defaultHeight))
     CreateGameButton = pygame_gui.elements.UIButton(
@@ -278,6 +336,7 @@ try:
     # show game
     print(f"{Client.isConnected=}")
     while hub:
+        # TODO: make this section smaller
         timeDelta = clock.tick(FPS) / 1000
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -349,8 +408,11 @@ try:
         manager.draw_ui(window)
         pygame.display.flip()
         window.fill((0, 0, 0))
+
+
     print(Cardinality)
     while running:
+        # get the state of both games
         gameVars = Client.sendAndRecv(RequestType.GET_GAME_VARS).value
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -358,6 +420,7 @@ try:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if time.time() - delayStart > delayTime and event.button == 1:  # left click
                     delayStart = time.time()
+                    # add the new ball
                     Client.send(RequestType.ADD_BALL,
                                 {"x": getClampedMouse(Cardinality), "Cardinality": Cardinality,
                                  "nextFruitType": nextFruitType})
@@ -365,6 +428,7 @@ try:
         keys = pygame.key.get_pressed()
         timeDelta = clock.tick(FPS) / 1000
         updateScreen(gameVars)
+        
 except ApplicationError as e:
     while True:
         for event in pygame.event.get():
