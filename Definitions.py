@@ -11,7 +11,7 @@ import dill
 import FruitType
 
 PORT = 5050
-HEADER = 4
+HEADER = 8
 FORMAT = 'utf-8'
 DISTANCE_FROM_WALL = 0.1
 BALL_WIDTH = 0.02
@@ -70,7 +70,7 @@ def handleCollision(arbiter, space, data, balls: List[Ball], addPoints):
     return True
 
 
-def setupSpace(balls: List[Ball]) -> pymunk.Space:
+def setupSpace(balls: List[Ball], addPoints) -> pymunk.Space:
     space = pymunk.Space()
     space.collision_slop = 0
     space.gravity = (0, Gravity)
@@ -101,7 +101,7 @@ def setupSpace(balls: List[Ball]) -> pymunk.Space:
         ballToAdd.addObject(space)
     for i in range(len(FruitType.fruitTypes)):
         handler = space.add_collision_handler(i, i)
-        handler.begin = (lambda arbiter, space, data, i=i: handleCollision(arbiter, space, i))
+        handler.begin = (lambda arbiter, space, data, i=i: handleCollision(arbiter, space, i, balls, addPoints))
     return space
 
 
@@ -114,10 +114,18 @@ class Game:
         self.player2X = 0.5
         self.player1Balls = []
         self.player2Balls = []
-        self.player1Space = setupSpace(self.player1Balls)
-        self.player2Space = setupSpace(self.player2Balls)
+
+        def addPoints1(points):
+            self.player1Score += points
+
+        def addPoints2(points):
+            self.player2Score += points
+
+        self.player1Space = setupSpace(self.player1Balls, addPoints1)
+        self.player2Space = setupSpace(self.player2Balls, addPoints2)
 
     def generateNewFruit(self, x, Cardinality, nextFruitType: FruitType):
+        space = None
         if Cardinality == 0:
             space = self.player1Space
             self.player1Score += nextFruitType.points
@@ -132,44 +140,37 @@ class Game:
             self.player2Balls.append(nextFruit)
 
     def toByteArray(self):
-        dilld_space1 = dill.dumps(self.player1Space)
-        return struct.pack('d', self.player1X) + \
-            struct.pack('d', self.player2X) + \
-            self.player1Score.to_bytes(4, 'little') + \
-            self.player2Score.to_bytes(4, 'little') + \
-            len(dilld_space1).to_bytes(4, 'little') + \
-            dilld_space1 + \
-            len(dill.dumps(self.player2Space)).to_bytes(4, 'little') + \
-            dill.dumps(self.player2Space) + \
-            len(dill.dumps(self.player1Balls)).to_bytes(4, 'little') + \
-            dill.dumps(self.player1Balls) + \
-            len(dill.dumps(self.player2Balls)).to_bytes(4, 'little') + \
-            dill.dumps(self.player2Balls)
+        return dill.dumps(
+            [
+                self.player1X,
+                self.player2X,
+                self.player1Score,
+                self.player2Score,
+                self.player1Space,
+                self.player2Space,
+                self.player1Balls,
+                self.player2Balls,
+
+            ]
+        )
 
     @staticmethod
     def fromByteArray(arr: bytearray):
         g = Game()
-        g.player1y = struct.unpack('d', arr[0:8])[0]
-        g.player2y = struct.unpack('d', arr[8:16])[0]
-        g.player1Score = int.from_bytes(arr[16:20], 'little')
-        g.player2Score = int.from_bytes(arr[20:24], 'little')
-        player1SpaceLength = int.from_bytes(arr[24:28], 'little')
-        g.player1Space = dill.loads(arr[28:28 + player1SpaceLength])
-        player2SpaceLength = int.from_bytes(arr[28 + player1SpaceLength:28 + player1SpaceLength + 4], 'little')
-        g.player2Space = dill.loads(arr[28 + player1SpaceLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength])
-        player1BallsLength = int.from_bytes(
-            arr[28 + player1SpaceLength + 4 + player2SpaceLength:28 + player1SpaceLength + 4 + player2SpaceLength + 4],
-            'little')
-        g.player1Balls = dill.loads(arr[
-                                    28 + player1SpaceLength + 4 + player2SpaceLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength])
-        player2BallsLength = int.from_bytes(
-            arr[
-            28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4],
-            'little')
-        g.player1Balls = dill.loads(arr[
-                                    28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4 + player2BallsLength])
-
+        arr = dill.loads(arr)
+        print(arr)
+        g.player1X = arr[0]
+        g.player2X = arr[1]
+        g.player1Score = arr[2]
+        g.player2Score = arr[3]
+        g.player1Space = arr[4]
+        g.player2Space = arr[5]
+        g.player1Balls = arr[6]
+        g.player2Balls = arr[7]
         return g
+
+    def __str__(self):
+        return f"player1X {self.player1X} player2X {self.player2X} player1Score {self.player1Score} player2Score {self.player2Score} player1Space {self.player1Space} player2Space {self.player2Space} player1Balls {self.player1Balls} player2Balls {self.player2Balls}"
 
 
 def randStr(N: int, chars=string.ascii_uppercase + string.digits):

@@ -17,7 +17,10 @@ class GameThread(threading.Thread):
 
     def run(self):
         pygame.init()
+        timeNow = time.time()
+        clock = pygame.time.Clock()
         while self.connected.either():
+            clock.tick(FPS)
             self.gameVars.player1Space.step(1 / FPS)
             self.gameVars.player2Space.step(1 / FPS)
         del games[self.index]

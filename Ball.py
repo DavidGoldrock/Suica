@@ -16,7 +16,8 @@ class Ball:
         body.position = (x, y)
         shape = pymunk.Circle(body, radius)
         shape.mass = radius
-        shape.collision_type = FruitType.fruitTypes.index(self.fruitType)
+        print(self.fruitType)
+        shape.collision_type = self.fruitType.index
         return body, shape
 
     def addObject(self, space):

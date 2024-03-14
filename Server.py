@@ -85,7 +85,7 @@ def handleClient(conn):
                         print(f"[JOIN GAME FAILED] for name {g['name']}")
                         sendMessage(403, conn)
                 case RequestType.GET_GAME_VARS:
-                    sendMessage(200, conn, value=gameThread.gameVars)
+                    sendMessage(200, conn, value=gameThread.gameVars, ShouldPrint=True)
                 case RequestType.RETRIEVE_GAMES:
                     try:
                         sendMessage(200, conn, value=[i["name"] for i in Definitions.games.values()])

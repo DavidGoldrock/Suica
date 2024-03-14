@@ -32,9 +32,11 @@ def recv():
 
 
 def sendAndRecv(typ: RequestType, value=None):
+    print(typ)
     send(typ, value)
     toReturn = recv()
     if toReturn.isError():
         errorOccured = True
+        print(toReturn)
         raise ApplicationError(toReturn)
     return toReturn

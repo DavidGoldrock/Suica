@@ -5,6 +5,8 @@ import struct
 import Definitions
 
 
+DEBUGGING = True
+
 class RequestType(Enum):
     DISCONNECT = 1
     CREATE_GAME = 130
@@ -71,6 +73,8 @@ class Request:
 
     @staticmethod
     def fromByteArray(t: bytearray | bytes):
+        if DEBUGGING:
+            print(f">>>{t}")
         return Request(RequestType.fromByte(t[0:1]), FunctionHandlerOut(t[2:], RequestTypeEncodingDict[t[1:2]]))
 
 
@@ -113,6 +117,8 @@ class Response:
 
     @staticmethod
     def fromByteArray(t: bytearray | bytes):
+        if DEBUGGING:
+            print(f"<<<{t}")
         return Response(int.from_bytes(t[0:2], 'little'), FunctionHandlerOut(t[3:], RequestTypeEncodingDict[t[2:3]]))
 
     def toTuple(self):
