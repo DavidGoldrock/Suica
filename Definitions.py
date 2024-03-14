@@ -8,7 +8,6 @@ from typing import List
 import dill
 import dill
 
-
 import FruitType
 
 PORT = 5050
@@ -22,6 +21,9 @@ FPS = 60
 Gravity = 0.7
 screenPercents = (700 / 1080, 700 / 1080)
 games = {}
+
+
+def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 
 class Connected:
@@ -132,17 +134,17 @@ class Game:
     def toByteArray(self):
         dilld_space1 = dill.dumps(self.player1Space)
         return struct.pack('d', self.player1X) + \
-               struct.pack('d', self.player2X) + \
-               self.player1Score.to_bytes(4, 'little') + \
-               self.player2Score.to_bytes(4, 'little') + \
-               len(dilld_space1).to_bytes(4, 'little') + \
-               dilld_space1 + \
-               len(dill.dumps(self.player2Space)).to_bytes(4, 'little') + \
-               dill.dumps(self.player2Space) + \
-               len(dill.dumps(self.player1Balls)).to_bytes(4, 'little') + \
-               dill.dumps(self.player1Balls) + \
-               len(dill.dumps(self.player2Balls)).to_bytes(4, 'little') + \
-               dill.dumps(self.player2Balls)
+            struct.pack('d', self.player2X) + \
+            self.player1Score.to_bytes(4, 'little') + \
+            self.player2Score.to_bytes(4, 'little') + \
+            len(dilld_space1).to_bytes(4, 'little') + \
+            dilld_space1 + \
+            len(dill.dumps(self.player2Space)).to_bytes(4, 'little') + \
+            dill.dumps(self.player2Space) + \
+            len(dill.dumps(self.player1Balls)).to_bytes(4, 'little') + \
+            dill.dumps(self.player1Balls) + \
+            len(dill.dumps(self.player2Balls)).to_bytes(4, 'little') + \
+            dill.dumps(self.player2Balls)
 
     @staticmethod
     def fromByteArray(arr: bytearray):
@@ -159,13 +161,13 @@ class Game:
             arr[28 + player1SpaceLength + 4 + player2SpaceLength:28 + player1SpaceLength + 4 + player2SpaceLength + 4],
             'little')
         g.player1Balls = dill.loads(arr[
-                                      28 + player1SpaceLength + 4 + player2SpaceLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength])
+                                    28 + player1SpaceLength + 4 + player2SpaceLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength])
         player2BallsLength = int.from_bytes(
             arr[
             28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4],
             'little')
         g.player1Balls = dill.loads(arr[
-                                      28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4 + player2BallsLength])
+                                    28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4:28 + player1SpaceLength + 4 + player2SpaceLength + 4 + player1BallsLength + 4 + player2BallsLength])
 
         return g
 

@@ -155,7 +155,7 @@ start = time.time()
 
 nextFruitType = random.choice(FruitType.fruitTypes[:4])
 
-ammountGenerated = 0
+amountGenerated = 0
 
 # server is down
 while not Client.isConnected:
