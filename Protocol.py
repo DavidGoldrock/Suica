@@ -5,7 +5,7 @@ import struct
 import Definitions
 
 
-DEBUGGING = True
+DEBUGGING = False
 
 class RequestType(Enum):
     DISCONNECT = 1

@@ -83,7 +83,6 @@ def longTextBlock(texts: list[str], x: float, y: float, size: int, color: tuple 
         realSize = size * 16 // 12
     # split based on max length of text
     for i, text in enumerate(texts):
-        print(texts)
         textBlock(text,
                   x,
                   y + 4 * i / realSize,

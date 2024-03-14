@@ -27,7 +27,6 @@ def sendMessage(code: int, conn: socket.socket, value=None, ShouldPrint=False):
     # send length of message in header bytes
     msgLength = str(len(message)).encode(Definitions.FORMAT)
     msgLength += b' ' * (Definitions.HEADER - len(msgLength))
-    print(len(message))
     if len(msgLength) > Definitions.HEADER:
         raise Exception("Header Size Overrun")
     conn.send(msgLength + message)
@@ -88,7 +87,7 @@ def handleClient(conn):
                         print(f"[JOIN GAME FAILED] for name {g['name']}")
                         sendMessage(403, conn)
                 case RequestType.GET_GAME_VARS:
-                    sendMessage(200, conn, value=gameThread.gameVars, ShouldPrint=True)
+                    sendMessage(200, conn, value=gameThread.gameVars)
                 case RequestType.RETRIEVE_GAMES:
                     try:
                         sendMessage(200, conn, value=[i["name"] for i in Definitions.games.values()])

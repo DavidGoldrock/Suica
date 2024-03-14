@@ -35,6 +35,16 @@ def getScreenSize():
 
     return _screenSize
 
+def getClampedMouse(Cardinality):
+    if Cardinality == 0:
+        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X + nextFruitType.radius * (ONE_X - ZERO_X),
+                              ONE_X - nextFruitType.radius * (ONE_X - ZERO_X))
+        mousePercent = ((mousePosition - ZERO_X) / (ONE_X - ZERO_X))
+    else:
+        mousePosition = clamp(pygame.mouse.get_pos()[0], ((screenSize - ZERO_X) + ZERO_X) + nextFruitType.radius * (((screenSize - ZERO_X) + ONE_X) - ((screenSize - ZERO_X) + ZERO_X)),
+                              ((screenSize - ZERO_X) + ONE_X) - nextFruitType.radius * (((screenSize - ZERO_X) + ONE_X) - ((screenSize - ZERO_X) + ZERO_X)))
+        mousePercent = ((mousePosition - ((screenSize - ZERO_X) + ZERO_X)) / (((screenSize - ZERO_X) + ONE_X) - ((screenSize - ZERO_X) + ZERO_X)))
+    return mousePercent
 
 def textBlock(text: str, x: float, y: float, size: int, color: tuple | str, center: bool = True,
               absoluteSize: bool = True, font=None):
@@ -126,27 +136,26 @@ def updateScreen(currentGameVars):
     circle(window, 'red', (ONE_X, ZERO_Y), 5)
     circle(window, 'red', (ONE_X, ONE_Y), 5)
 
-    if Cardinality == 0:
-        balls = gameVars.player1Balls
-        opponentBalls = gameVars.player2Balls
-    else:
-        balls = gameVars.player2Balls
-        opponentBalls = gameVars.player1Balls
+    player1Balls = currentGameVars.player1Balls
+    player2Balls = currentGameVars.player2Balls
 
-    for ball in balls:
+    for ball in player1Balls:
         # ball.update(timeDelta)
         ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
 
     if time.time() - delayStart > delayTime:
         # mouse clamp position to window
-        mousePosition = clamp(pygame.mouse.get_pos()[0], ZERO_X + nextFruitType.radius * (ONE_X - ZERO_X),
-                              ONE_X - nextFruitType.radius * (ONE_X - ZERO_X))
-        mousePercent = ((mousePosition - ZERO_X) / (ONE_X - ZERO_X))
-        Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y,
-                      screenSize)
-    for ball in opponentBalls:
+        mousePercent = getClampedMouse(Cardinality)
+        if Cardinality == 0:
+            Ball.drawBall(mousePercent, 0, nextFruitType, window, ZERO_X, ONE_X, ZERO_Y, ONE_Y,
+                          screenSize)
+        else:
+            Ball.drawBall(mousePercent, 0, nextFruitType, window, (screenSize - ZERO_X) + ZERO_X,
+                          (screenSize - ZERO_X) + ONE_X, ZERO_Y, ONE_Y,
+                          screenSize)
+    for ball in player2Balls:
         # ball.update(timeDelta)
-        ball.draw(window, ZERO_X, ONE_X, ZERO_Y, ONE_Y, screenSize)
+        ball.draw(window, (screenSize - ZERO_X) + ZERO_X, (screenSize - ZERO_X) + ONE_X, ZERO_Y, ONE_Y, screenSize)
     textBlock("points " + str(points), 0, 0, 20, 'white', False, True, pygame.font.SysFont("Arial", 20))
 
     pygame.display.flip()
@@ -329,9 +338,7 @@ try:
                 if time.time() - delayStart > delayTime and event.button == 1:  # left click
                     delayStart = time.time()
                     Client.send(RequestType.ADD_BALL,
-                                {"x": max(min((pygame.mouse.get_pos()[0] - ZERO_X) / (ONE_X - ZERO_X),
-                                              1 - nextFruitType.radius),
-                                          0 + nextFruitType.radius), "Cardinality": Cardinality,
+                                {"x": getClampedMouse(Cardinality), "Cardinality": Cardinality,
                                  "nextFruitType": nextFruitType})
                     nextFruitType = random.choice(FruitType.fruitTypes[:4])
         keys = pygame.key.get_pressed()

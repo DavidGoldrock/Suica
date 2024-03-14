@@ -49,7 +49,6 @@ class Connected:
 
 
 def handleCollision(arbiter, space, data, balls: List[Ball], addPoints):
-    print(data)
     colided = []
     for shape in arbiter.shapes:
         for ball in balls:
@@ -132,6 +131,7 @@ class Game:
         elif Cardinality == 1:
             space = self.player2Space
             self.player1Score += nextFruitType.points
+        print(space)
         nextFruit = Ball(x, 0, nextFruitType)
         nextFruit.addObject(space)
         if Cardinality == 0:
@@ -158,7 +158,6 @@ class Game:
     def fromByteArray(arr: bytearray):
         g = Game()
         arr = dill.loads(arr)
-        print(arr)
         g.player1X = arr[0]
         g.player2X = arr[1]
         g.player1Score = arr[2]
