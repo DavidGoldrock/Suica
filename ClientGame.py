@@ -345,43 +345,37 @@ try:
                 # showing and disabling all buttons by pressing
                 # also activating the functions
                 if event.ui_element == CreateGameButton:
-                    for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]:
-                        button.show()
-                    for button in [NameTextBox, PasswordTextBox]:
-                        button.set_text('')
-                    for button in [*gameButtons, CreateGameButton, RefreshButton]:
-                        button.disable()
+                    [button.show() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
+                    [button.set_text('') for button in [NameTextBox, PasswordTextBox]]
+                    [button.disable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
                     request = RequestType.CREATE_GAME
                 if event.ui_element == CancelButton:
-                    for button in [*gameButtons, CreateGameButton, RefreshButton]:
-                        button.enable()
-                    for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]:
-                        button.hide()
-                        
+                    [button.enable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
+                    [button.hide() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
+
                 if event.ui_element == OKButton:
                     if request == RequestType.CREATE_GAME:
-                        Cardinality = Client.sendAndRecv(request, {"name": NameTextBox.get_text(),
-                                                                   "password": PasswordTextBox.get_text()}).value
+                        Cardinality = Client.sendAndRecv(request, {"name": NameTextBox.get_text(), "password": PasswordTextBox.get_text()}).value
                     elif request == RequestType.JOIN_GAME:
                         print(PasswordTextBox.get_text())
-                        Cardinality = Client.sendAndRecv(request, {"name": joinGameName,
-                                                                   "password": PasswordTextBox.get_text()}).value
+                        Cardinality = Client.sendAndRecv(request, {"name": joinGameName, "password": PasswordTextBox.get_text()}).value
+
                     Client.sendAndRecv(RequestType.RETRIEVE_GAMES).print(True)
-                    for button in [*gameButtons,CreateGameButton,RefreshButton,CancelButton,OKButton,NameTextBox,PasswordTextBox]:
-                        button.kill()
+
+                    [button.kill() for button in [*gameButtons,CreateGameButton,RefreshButton,CancelButton,OKButton,NameTextBox,PasswordTextBox]]
+
                     hub = False
                 if event.ui_element in gameButtons:
-                    for button in [CancelButton, OKButton, PasswordTextBox]:
-                        button.show()
+                    [button.show() for button in [CancelButton, OKButton, PasswordTextBox]]
+                    [button.disable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
                     PasswordTextBox.set_text('')
-                    for button in [*gameButtons, CreateGameButton, RefreshButton]:
-                        button.disable()
+
                     request = RequestType.JOIN_GAME
                     joinGameName = event.ui_element.text
+
                 if event.ui_element == RefreshButton:
                     games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
-                    for button in gameButtons:
-                        button.kill()
+                    [button.kill() for button in gameButtons]
                     gameButtons = [pygame_gui.elements.UIButton(
                         relative_rect=pygame.Rect((0 + xPadding, getScreenSize() / 5 + 50 * i + yPadding),
                                                   (getScreenSize(), 50 + yPadding)),
