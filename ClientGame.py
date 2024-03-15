@@ -250,51 +250,7 @@ def updateScreen(currentGameVars):
 
     pygame.display.flip()
 
-
-pygame.init()
-
-# time to delay between fruits
-delayTime = 0.5
-delayStart = time.time() - delayTime
-
-# path to current directory
-configPath = os.path.dirname(os.path.realpath(__file__))
-
-window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
-clock = pygame.time.Clock()
-
-# is in create game / join game screen
-hub = True
-# is game on
-running = True
-
-# update screenSize
-screenSize = getScreenSize()
-
-# the fruit Type of the next ball the player will drop
-nextFruitType = random.choice(FruitType.fruitTypes[:4])
-
-# server is down
-while not Client.isConnected:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            exitGame()
-    keys = pygame.key.get_pressed()
-    clock.tick(FPS)
-    window.fill((0, 0, 0))
-    longTextBlock(
-        [f"Server {str(Client.ADDR)} is down", "please close the application and", "open it again at a later time"],
-        0.5,
-        0.3,
-        getScreenSize() // 30,
-        "white",
-        font=pygame.font.SysFont("Arial", getScreenSize() // 30))
-    pygame.display.flip()
-try:
-    games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
-
-
-    manager = pygame_gui.UIManager((int(defaultWidth), defaultHeight))
+def generateHubButtons():
     CreateGameButton = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect((0 + xPadding, getScreenSize() - 50 + yPadding), (130, 50 + yPadding)),
         text='Create Game',
@@ -326,6 +282,115 @@ try:
                                   (getScreenSize(), 50 + yPadding)),
         text=game,
         manager=manager) for i, game in enumerate(games)]
+    
+    return CreateGameButton, RefreshButton, NameTextBox, PasswordTextBox, OKButton, CancelButton, gameButtons
+
+
+def handleHubButtonPressed(hubButton):
+    global request
+    global hub
+    global joinGameName
+    global Cardinality
+    global CreateGameButton
+    global RefreshButton
+    global NameTextBox
+    global PasswordTextBox
+    global OKButton
+    global CancelButton
+    global gameButtons
+    # showing and disabling all buttons by pressing
+    # also activating the functions
+    if hubButton == CreateGameButton:
+        [button.show() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
+        [button.set_text('') for button in [NameTextBox, PasswordTextBox]]
+        [button.disable() for button in [CreateGameButton, RefreshButton, *gameButtons]]
+        request = RequestType.CREATE_GAME
+    # cancels the current Action
+    if hubButton == CancelButton:
+        [button.enable() for button in [CreateGameButton, RefreshButton, *gameButtons]]
+        [button.hide() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
+    # commits to the action chosen
+    if hubButton == OKButton:
+        if request == RequestType.CREATE_GAME:
+            Cardinality = Client.sendAndRecv(request, {"name": NameTextBox.get_text(),
+                                                       "password": PasswordTextBox.get_text()}).value
+
+        elif request == RequestType.JOIN_GAME:
+            print(PasswordTextBox.get_text())
+            Cardinality = Client.sendAndRecv(request,
+                                             {"name": joinGameName, "password": PasswordTextBox.get_text()}).value
+
+        Client.sendAndRecv(RequestType.RETRIEVE_GAMES).print(True)
+
+        [button.kill() for button in
+         [CreateGameButton, RefreshButton, CancelButton, OKButton, NameTextBox, PasswordTextBox, *gameButtons]]
+
+        hub = False
+    # open game clicked
+    if hubButton in gameButtons:
+        [button.show() for button in [CancelButton, OKButton, PasswordTextBox]]
+        [button.disable() for button in [CreateGameButton, RefreshButton, *gameButtons]]
+        PasswordTextBox.set_text('')
+
+        request = RequestType.JOIN_GAME
+        joinGameName = hubButton.text
+
+    # refresh the
+    if hubButton == RefreshButton:
+        games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
+        [button.kill() for button in gameButtons]
+        gameButtons = [pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((0 + xPadding, getScreenSize() / 5 + 50 * i + yPadding),
+                                      (getScreenSize(), 50 + yPadding)),
+            text=game,
+            manager=manager) for i, game in enumerate(games)]
+
+pygame.init()
+
+# time to delay between fruits
+delayTime = 0.5
+delayStart = time.time() - delayTime
+
+# path to current directory
+configPath = os.path.dirname(os.path.realpath(__file__))
+
+window = pygame.display.set_mode([defaultWidth, defaultHeight], RESIZABLE)
+clock = pygame.time.Clock()
+# default values for the buttons
+CreateGameButton, RefreshButton, NameTextBox, PasswordTextBox, OKButton, CancelButton, gameButtons = None, None, None, None, None, None, None
+# is in create game / join game screen
+hub = True
+# is game on
+running = True
+
+# update screenSize
+screenSize = getScreenSize()
+
+# the fruit Type of the next ball the player will drop
+nextFruitType = random.choice(FruitType.fruitTypes[:4])
+
+# server is down
+while not Client.isConnected:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exitGame()
+    keys = pygame.key.get_pressed()
+    clock.tick(FPS)
+    window.fill((0, 0, 0))
+    longTextBlock(
+        [f"Server {str(Client.ADDR)} is down", "please close the application and", "open it again at a later time"],
+        0.5,
+        0.3,
+        getScreenSize() // 30,
+        "white",
+        font=pygame.font.SysFont("Arial", getScreenSize() // 30))
+    pygame.display.flip()
+try:
+    games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
+
+    manager = pygame_gui.UIManager((int(defaultWidth), defaultHeight))
+    CreateGameButton, RefreshButton, NameTextBox, PasswordTextBox, OKButton, CancelButton, gameButtons = generateHubButtons()
+    
     CancelButton.hide()
     OKButton.hide()
     NameTextBox.hide()
@@ -341,49 +406,7 @@ try:
             if event.type == pygame.QUIT:
                 exitGame()
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                # showing and disabling all buttons by pressing
-                # also activating the functions
-                if event.ui_element == CreateGameButton:
-                    [button.show() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
-                    [button.set_text('') for button in [NameTextBox, PasswordTextBox]]
-                    [button.disable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
-                    request = RequestType.CREATE_GAME
-                # cancels the current Action
-                if event.ui_element == CancelButton:
-                    [button.enable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
-                    [button.hide() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
-                # commits to the action chosen
-                if event.ui_element == OKButton:
-                    if request == RequestType.CREATE_GAME:
-                        Cardinality = Client.sendAndRecv(request, {"name": NameTextBox.get_text(), "password": PasswordTextBox.get_text()}).value
-
-                    elif request == RequestType.JOIN_GAME:
-                        print(PasswordTextBox.get_text())
-                        Cardinality = Client.sendAndRecv(request, {"name": joinGameName, "password": PasswordTextBox.get_text()}).value
-
-                    Client.sendAndRecv(RequestType.RETRIEVE_GAMES).print(True)
-
-                    [button.kill() for button in [*gameButtons,CreateGameButton,RefreshButton,CancelButton,OKButton,NameTextBox,PasswordTextBox]]
-
-                    hub = False
-                # open game clicked
-                if event.ui_element in gameButtons:
-                    [button.show() for button in [CancelButton, OKButton, PasswordTextBox]]
-                    [button.disable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
-                    PasswordTextBox.set_text('')
-
-                    request = RequestType.JOIN_GAME
-                    joinGameName = event.ui_element.text
-
-                # refresh the buttons
-                if event.ui_element == RefreshButton:
-                    games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
-                    [button.kill() for button in gameButtons]
-                    gameButtons = [pygame_gui.elements.UIButton(
-                        relative_rect=pygame.Rect((0 + xPadding, getScreenSize() / 5 + 50 * i + yPadding),
-                                                  (getScreenSize(), 50 + yPadding)),
-                        text=game,
-                        manager=manager) for i, game in enumerate(games)]
+                handleHubButtonPressed(event.ui_element)
             manager.process_events(event)
         manager.update(timeDelta)
         manager.draw_ui(window)
