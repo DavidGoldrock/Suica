@@ -336,7 +336,6 @@ try:
     # show game
     print(f"{Client.isConnected=}")
     while hub:
-        # TODO: make this section smaller
         timeDelta = clock.tick(FPS) / 1000
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -357,6 +356,7 @@ try:
                 if event.ui_element == OKButton:
                     if request == RequestType.CREATE_GAME:
                         Cardinality = Client.sendAndRecv(request, {"name": NameTextBox.get_text(), "password": PasswordTextBox.get_text()}).value
+
                     elif request == RequestType.JOIN_GAME:
                         print(PasswordTextBox.get_text())
                         Cardinality = Client.sendAndRecv(request, {"name": joinGameName, "password": PasswordTextBox.get_text()}).value
