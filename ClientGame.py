@@ -349,10 +349,11 @@ try:
                     [button.set_text('') for button in [NameTextBox, PasswordTextBox]]
                     [button.disable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
                     request = RequestType.CREATE_GAME
+                # cancels the current Action
                 if event.ui_element == CancelButton:
                     [button.enable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
                     [button.hide() for button in [CancelButton, OKButton, NameTextBox, PasswordTextBox]]
-
+                # commits to the action chosen
                 if event.ui_element == OKButton:
                     if request == RequestType.CREATE_GAME:
                         Cardinality = Client.sendAndRecv(request, {"name": NameTextBox.get_text(), "password": PasswordTextBox.get_text()}).value
@@ -365,6 +366,7 @@ try:
                     [button.kill() for button in [*gameButtons,CreateGameButton,RefreshButton,CancelButton,OKButton,NameTextBox,PasswordTextBox]]
 
                     hub = False
+                # open game clicked
                 if event.ui_element in gameButtons:
                     [button.show() for button in [CancelButton, OKButton, PasswordTextBox]]
                     [button.disable() for button in [*gameButtons, CreateGameButton, RefreshButton]]
@@ -373,6 +375,7 @@ try:
                     request = RequestType.JOIN_GAME
                     joinGameName = event.ui_element.text
 
+                # refresh the buttons
                 if event.ui_element == RefreshButton:
                     games = Client.sendAndRecv(RequestType.RETRIEVE_GAMES).value
                     [button.kill() for button in gameButtons]
