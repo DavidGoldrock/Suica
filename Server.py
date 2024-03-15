@@ -1,5 +1,4 @@
 import socket
-# green terminal:
 import threading
 from os import system
 
@@ -9,7 +8,9 @@ import GameThread
 import Definitions
 from types import NoneType
 
+# green terminal:
 system('color a')
+
 # create socket
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, Definitions.PORT)
@@ -39,14 +40,17 @@ def handleClient(conn):
     gameThread = None
     Cardinality = None
     while connected:
+        # get Message from user
         msgLength = conn.recv(Definitions.HEADER).decode(Definitions.FORMAT)
         if msgLength:
             msgLength = int(msgLength)
             msg = Protocol.Request.fromByteArray(conn.recv(msgLength))  # receive number of bytes told by user
             # act in different ways depending on the request type
             match msg.RequestType:
+                # adds a ball from user in position x
                 case RequestType.ADD_BALL:
                     gameThread.gameVars.generateNewFruit(msg.value["x"], msg.value["Cardinality"], msg.value["nextFruitType"])
+                # creates a new game with name and password
                 case RequestType.CREATE_GAME:
                     if msg.value is not None:
                         key = Definitions.randStr(64)
@@ -60,7 +64,13 @@ def handleClient(conn):
                         sendMessage(200, conn, Cardinality)
                     else:
                         sendMessage(402, conn)
+                # joins gae wih password and name
+                # if name isn't found it sends 403
+                # if passwords don't match it sends 401
+                # if server crashed due to internal error it sends 500
+                # if all is well it sends 200 with the Cardinality of the user (0 if first user, 1 if second)
                 case RequestType.JOIN_GAME:
+                    # has the game been found in games
                     found = False
                     for g in Definitions.games.values():
                         if g is not None and g is not NoneType:
@@ -86,14 +96,18 @@ def handleClient(conn):
                     if not found:
                         print(f"[JOIN GAME FAILED] for name {g['name']}")
                         sendMessage(403, conn)
+                # sends current game vars
                 case RequestType.GET_GAME_VARS:
                     sendMessage(200, conn, value=gameThread.gameVars)
+                # returns the games currently active
+                # if one of the game is broken and has no name, sends 500
                 case RequestType.RETRIEVE_GAMES:
                     try:
                         sendMessage(200, conn, value=[i["name"] for i in Definitions.games.values()])
                     except KeyError:
                         sendMessage(500, conn)
                         continue
+                # disconnects from server
                 case RequestType.DISCONNECT:
                     connected = False
                     playerCount -= 1

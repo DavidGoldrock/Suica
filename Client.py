@@ -3,7 +3,7 @@ import socket
 from Definitions import *
 from Protocol import *
 
-SERVER = "192.168.2.102"
+SERVER = "192.168.56.1"
 ADDR = (SERVER, PORT)
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 isConnected = True
